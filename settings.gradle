@@ -1,0 +1,8 @@
+rootProject.name = 'miniconnect-client'
+
+include 'client'
+include 'repl'
+
+rootProject.children.each { project ->
+    project.projectDir = new File(settingsDir, "projects/${project.name}")
+}

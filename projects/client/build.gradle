@@ -1,0 +1,32 @@
+plugins {
+    id 'java-library'
+    id 'application'
+    id 'eclipse'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+description "MiniConnect REPL"
+
+dependencies {
+    implementation project(':repl')
+    implementation "hu.webarticum.miniconnect.api:api:${miniConnectApiVersion}"
+    implementation "hu.webarticum.miniconnect:impl:${miniConnectVersion}"
+    implementation "hu.webarticum.miniconnect:record:${miniConnectVersion}"
+    implementation "hu.webarticum.miniconnect:messenger:${miniConnectVersion}"
+    implementation "hu.webarticum.miniconnect:server:${miniConnectVersion}"
+    implementation 'hu.webarticum:regexbee:0.4.0'
+    implementation 'info.picocli:picocli:4.6.3'
+    
+    runtimeOnly 'org.slf4j:slf4j-nop:1.7.36'
+}
+
+application {
+    mainClass = "hu.webarticum.miniconnect.client.client.ClientMain"
+}
+
+run {
+    standardInput = System.in
+}
