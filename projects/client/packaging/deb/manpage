@@ -1,0 +1,14 @@
+.TH miniconnect-client 1
+.SH NAME
+miniconnect-client, micl \- miniconnect command line client
+.SH SYNOPSIS
+.B micl
+.RI [ \fIhost\fR [:\fIport\fR] ]
+.RI [ options ]
+.br
+.SH DESCRIPTION
+Command line REPL client for connecting databases via miniconnect API.
+.SH OPTIONS
+.TP
+.BR \-i ", " \-\-interactive\-input
+Get server host and port interactively.
