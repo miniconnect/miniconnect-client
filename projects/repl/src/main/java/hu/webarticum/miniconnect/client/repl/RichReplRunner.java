@@ -31,8 +31,9 @@ public class RichReplRunner implements ReplRunner {
         
         try (Terminal terminal = createTerminal()) {
             LineReader reader = createLineReader(terminal);
+            boolean wasComplete = true;
             while (true) { // NOSONAR
-                String prompt = composePrompt(repl);
+                String prompt = composePrompt(repl, wasComplete);
                 String line;
                 try {
                     line = reader.readLine(prompt);
@@ -42,9 +43,9 @@ public class RichReplRunner implements ReplRunner {
 
                 currentQueryBuilder.append(line);
                 String query = currentQueryBuilder.toString();
-                if (!repl.isCommandComplete(query)) {
+                wasComplete = repl.isCommandComplete(query);
+                if (!wasComplete) {
                     currentQueryBuilder.append('\n');
-                    repl.prompt2(out);
                     continue;
                 }
                 currentQueryBuilder = new StringBuilder();
@@ -74,10 +75,14 @@ public class RichReplRunner implements ReplRunner {
                 .build();
     }
 
-    private String composePrompt(Repl repl) throws IOException {
+    private String composePrompt(Repl repl, boolean wasComplete) throws IOException {
         StringBuilder promptBuilder = new StringBuilder();
         AnsiAppendable promptOut = new RichAnsiAppendable(promptBuilder);
-        repl.prompt(promptOut);
+        if (wasComplete) {
+            repl.prompt(promptOut);
+        } else {
+            repl.prompt2(promptOut);
+        }
         return promptBuilder.toString();
     }
     
