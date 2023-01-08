@@ -1,6 +1,0 @@
-miniconnect-client (0.1.0) unstable; urgency=medium
-
-  * Initial Release.
-  * Added REPL framework and command line SQL client.
-
- -- Dávid Horváth <horvath@webarticum.hu>  Sat, 7 Jan 2023 12:00:00 +0100

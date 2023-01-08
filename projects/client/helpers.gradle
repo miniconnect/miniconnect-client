@@ -1,0 +1,142 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.apache.commons:commons-compress:1.22'
+        classpath 'org.commonmark:commonmark:0.21.0'
+        classpath 'org.freemarker:freemarker:2.3.31'
+    }
+}
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.time.format.DateTimeFormatter
+import org.apache.commons.compress.compressors.gzip.GzipParameters
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
+import org.commonmark.parser.Parser
+import org.commonmark.node.AbstractVisitor
+import org.commonmark.node.BulletList
+import org.commonmark.node.Heading
+import org.commonmark.node.Node
+import org.commonmark.node.Paragraph
+import org.commonmark.node.Text
+import org.commonmark.parser.Parser
+import freemarker.template.Configuration
+
+
+ext.compressWithGzip9 = { sourcePath, targetPath ->
+    GzipParameters parameters = new GzipParameters();
+    parameters.setCompressionLevel(9);
+    def sourcePathObj = Paths.get(absolutizePath(sourcePath));
+    def targetPathObj = Paths.get(absolutizePath(targetPath));
+    try (OutputStream out = new GzipCompressorOutputStream(Files.newOutputStream(targetPathObj), parameters)) {
+        Files.copy(sourcePathObj, out);
+    }
+}
+
+ext.parseChangelogMarkdown = { path ->
+    def parser = Parser.builder().build();
+    def root;
+    try (InputStream in = new FileInputStream(new File(absolutizePath(path)))) {
+        root = parser.parseReader(new InputStreamReader(in));
+    }
+    
+    def releases = [];
+    def currentSections = null;
+    def currentEntries = null;
+    for (Node node = root.getFirstChild(); node != null; node = node.getNext()) {
+        if (node instanceof Heading) {
+            if (((Heading) node).getLevel() == 2) {
+                currentSections = null;
+                currentEntries = null;
+                
+                String textContent = getNodeSimpleText(node);
+                def versionMatcher = textContent =~ /^Version (\d+\.\d+\.\d+)$/
+                if (!versionMatcher.matches()) {
+                    continue;
+                }
+                
+                def nextNode = node.getNext()
+                if (!(nextNode instanceof Paragraph)) {
+                    continue;
+                }
+                def nextTextContent = getNodeSimpleText(nextNode);
+                
+                def dateMatcher = nextTextContent =~ /^Released on (\d{4}\-\d{2}\-\d{2})$/
+                if (!dateMatcher.matches()) {
+                    continue;
+                }
+                
+                def version = versionMatcher.group(1);
+                def dateString = dateMatcher.group(1);
+                def dateObj = (LocalDate
+                    .parse(dateString, DateTimeFormatter.ofPattern('yyyy-MM-dd'))
+                    .atStartOfDay()
+                    .atZone(ZoneId.of("Europe/Budapest"))
+                );
+                def date = dateObj.format(
+                    DateTimeFormatter.ofPattern('E, d MMM yyyy HH:mm:ss Z').withLocale(Locale.US)
+                );
+                println(date);
+                currentSections = [];
+                def release = [
+                    "version": version,
+                    "sections": currentSections,
+                    "date": date,
+                ];
+                releases.add(release);
+            } else if (((Heading) node).getLevel() == 3) {
+                currentEntries = null;
+                if (currentSections != null) {
+                    String textContent = getNodeSimpleText(node);
+                    currentEntries = [];
+                    def section = [
+                        "title": textContent,
+                        "entries": currentEntries,
+                    ]
+                    currentSections.add(section);
+                }
+            }
+        } else if (node instanceof BulletList && currentEntries != null) {
+            for (Node item = node.getFirstChild(); item != null; item = item.getNext()) {
+                String textContent = getNodeSimpleText(item);
+                currentEntries.add(textContent);
+            }
+        }
+    }
+    return ["releases": releases];
+}
+
+ext.getNodeSimpleText = { node ->
+    def resultBuilder = new StringBuilder();
+    node.accept(new AbstractVisitor() {
+        
+        @Override
+        public void visit(Text text) {
+            resultBuilder.append(text.getLiteral().replaceAll("\\s+", " "));
+        }
+        
+    });
+    return resultBuilder.toString();
+}
+
+ext.buildDebianChangelog = { String targetPath, data ->
+    def templateConfig = new Configuration(Configuration.VERSION_2_3_29);
+    templateConfig.setDirectoryForTemplateLoading(new File(absolutizePath('packaging/deb')));
+    templateConfig.setDefaultEncoding("UTF-8");
+    def template = templateConfig.getTemplate("changelog.ftl");
+    try (OutputStream out = new FileOutputStream(new File(absolutizePath(targetPath)))) {
+        template.process(data, new OutputStreamWriter(out));
+    }
+}
+
+ext.absolutizePath = { String path ->
+    def file = new File(path);
+    if (file.isAbsolute()) {
+        return path;
+    } else {
+        return "${projectDir}/${path}"
+    }
+}

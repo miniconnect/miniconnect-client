@@ -1,13 +1,3 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'org.apache.commons:commons-compress:1.22'
-    }
-}
-
 plugins {
     id 'java-library'
     id 'application'
@@ -15,11 +5,9 @@ plugins {
     id 'nebula.deb' version '9.1.1'
 }
 
+apply from: 'helpers.gradle'
+
 import org.apache.tools.ant.filters.ReplaceTokens
-import java.nio.file.Files
-import java.nio.file.Paths
-import org.apache.commons.compress.compressors.gzip.GzipParameters
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -59,15 +47,6 @@ run {
 }
 
 
-def compressWithGzip9(String source, String target) throws IOException {
-    GzipParameters parameters = new GzipParameters();
-    parameters.setCompressionLevel(9);
-    try (OutputStream out = new GzipCompressorOutputStream(Files.newOutputStream(Paths.get(target)), parameters)) {
-        Files.copy(Paths.get(source), out);
-    }
-}
-    
-
 task buildDeb(type: Deb, dependsOn: ['jar']) {
     File jarFile = jar.archiveFile.getAsFile().get();
     String jarFileName = jarFile.getName()
@@ -76,16 +55,11 @@ task buildDeb(type: Deb, dependsOn: ['jar']) {
         mkdir 'build/deb-prepare'
         
         // TODO: generate from picocli
-        compressWithGzip9(
-            file('packaging/deb/manpage').absolutePath,
-            file('build/deb-prepare/manpage.gz').absolutePath,
-        )
+        compressWithGzip9('packaging/deb/manpage', 'build/deb-prepare/manpage.gz')
         
-        // TODO: generate from a unified changelog file
-        compressWithGzip9(
-            file('packaging/deb/changelog').absolutePath,
-            file('build/deb-prepare/changelog.Debian.gz').absolutePath,
-        )
+        def changelogData = parseChangelogMarkdown('../../CHANGELOG.md')
+        buildDebianChangelog('build/deb-prepare/changelog', changelogData)
+        compressWithGzip9('build/deb-prepare/changelog', 'build/deb-prepare/changelog.Debian.gz')
         
         copy {
             from (file('packaging/deb/copyright'))
