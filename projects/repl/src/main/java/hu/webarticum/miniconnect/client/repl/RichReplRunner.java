@@ -85,6 +85,7 @@ public class RichReplRunner implements ReplRunner {
                 .parser(new DefaultParser())
                 .history(new DefaultHistory())
                 .highlighter(new KeywordHighlighter(keywords))
+                .completer(new KeywordCompleter(keywords))
                 .variable(LineReader.BLINK_MATCHING_PAREN, 0)
                 .build();
     }

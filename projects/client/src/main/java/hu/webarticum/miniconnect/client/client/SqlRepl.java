@@ -30,6 +30,7 @@ public class SqlRepl implements Repl {
     
     // FIXME
     public static final ImmutableList<String> KEYWORDS = ImmutableList.of(
+            "data", "help", "exit", "quit",
             "use", "set", "select", "update", "insert", "replace", "delete",
             "from", "into", "values", "where", "order", "by", "limit",
             "join", "left", "inner", "outer", "on",
