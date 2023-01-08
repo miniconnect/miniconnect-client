@@ -126,7 +126,7 @@ task buildDeb(type: Deb, dependsOn: ['jar']) {
     link("/usr/bin/${longExecutableName}", executableName)
     link("/usr/share/man/man1/${executableName}.1.gz", "${deploymentName}.1.gz")
     
-    from (configurations.default.files) {
+    from (configurations.runtimeClasspath) {
         into "/usr/share/${deploymentName}/lib"
     }
 }
