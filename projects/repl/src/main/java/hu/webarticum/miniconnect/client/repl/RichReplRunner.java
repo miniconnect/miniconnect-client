@@ -10,9 +10,22 @@ import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
+import hu.webarticum.miniconnect.lang.ImmutableList;
+
 public class RichReplRunner implements ReplRunner {
     
+    private final ImmutableList<String> keywords;
+    
     private final AnsiAppendable out = new RichAnsiAppendable(System.out); // NOSONAR System.out is necessary
+    
+    
+    public RichReplRunner() {
+        this(ImmutableList.empty());
+    }
+
+    public RichReplRunner(ImmutableList<String> keywords) {
+        this.keywords = keywords;
+    }
     
 
     @Override
@@ -71,6 +84,7 @@ public class RichReplRunner implements ReplRunner {
                 .terminal(terminal)
                 .parser(new DefaultParser())
                 .history(new DefaultHistory())
+                .highlighter(new KeywordHighlighter(keywords))
                 .variable(LineReader.BLINK_MATCHING_PAREN, 0)
                 .build();
     }

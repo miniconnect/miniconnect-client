@@ -23,6 +23,8 @@ public class AnsiUtil {
     private static final String PARAMETER_START_ANSI = "\u001B[3;33m";
 
     private static final String NUMBER_START_ANSI = "\u001B[1;96m";
+
+    private static final String KEYWORD_START_ANSI = "\u001B[1;36m";
     
     private static final String NONE_START_ANSI = "\u001B[3;90m";
     
@@ -72,6 +74,10 @@ public class AnsiUtil {
 
     public static String formatAsNumber(CharSequence promptText) {
         return NUMBER_START_ANSI + promptText + RESET_ANSI;
+    }
+
+    public static String formatAsKeyword(CharSequence promptText) {
+        return KEYWORD_START_ANSI + promptText + RESET_ANSI;
     }
 
     public static String formatAsNone(CharSequence promptText) {

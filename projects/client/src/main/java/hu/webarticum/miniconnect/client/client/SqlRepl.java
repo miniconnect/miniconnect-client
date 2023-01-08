@@ -28,6 +28,14 @@ public class SqlRepl implements Repl {
     
     public static final String DEFAULT_TITLE_MESSAGE = "Welcome in miniConnect SQL REPL!";
     
+    // FIXME
+    public static final ImmutableList<String> KEYWORDS = ImmutableList.of(
+            "use", "set", "select", "update", "insert", "replace", "delete",
+            "from", "into", "values", "where", "order", "by", "limit",
+            "join", "left", "inner", "outer", "on",
+            "asc", "desc", "nulls", "first", "last",
+            "between", "and", "is", "not", "null");
+    
     
     private static final BeeFragment TERMINATOR_FRAGMENT = Bee
             .then(Bee.WHITESPACE.any())

@@ -82,7 +82,7 @@ public class ClientMain implements Callable<Integer> {
     
     private static ReplRunner createReplRunner() {
         if (System.console() != null) {
-            return new RichReplRunner();
+            return new RichReplRunner(SqlRepl.KEYWORDS);
         }
         
         return new PlainReplRunner(System.in, System.out); // NOSONAR System.out is necessary
