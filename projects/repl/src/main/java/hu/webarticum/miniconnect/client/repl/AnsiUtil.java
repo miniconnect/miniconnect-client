@@ -25,9 +25,15 @@ public class AnsiUtil {
     private static final String NUMBER_START_ANSI = "\u001B[1;96m";
 
     private static final String KEYWORD_START_ANSI = "\u001B[1;36m";
+
+    private static final String VARIABLE_START_ANSI = "\u001B[1;35m";
     
+    private static final String STRING_START_ANSI = "\u001B[33m";
+    
+    private static final String QUOTED_IDENTIFIER_START_ANSI = "\u001B[1;35m";
+
     private static final String NONE_START_ANSI = "\u001B[3;90m";
-    
+
     private static final String RESET_ANSI = "\u001B[0m";
 
     
@@ -78,6 +84,18 @@ public class AnsiUtil {
 
     public static String formatAsKeyword(CharSequence promptText) {
         return KEYWORD_START_ANSI + promptText + RESET_ANSI;
+    }
+
+    public static String formatAsVariable(CharSequence promptText) {
+        return VARIABLE_START_ANSI + promptText + RESET_ANSI;
+    }
+
+    public static String formatAsString(CharSequence promptText) {
+        return STRING_START_ANSI + promptText + RESET_ANSI;
+    }
+
+    public static String formatAsQuotedIdentifier(CharSequence promptText) {
+        return QUOTED_IDENTIFIER_START_ANSI + promptText + RESET_ANSI;
     }
 
     public static String formatAsNone(CharSequence promptText) {

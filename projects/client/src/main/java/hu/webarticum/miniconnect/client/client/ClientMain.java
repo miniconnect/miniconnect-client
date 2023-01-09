@@ -1,17 +1,26 @@
 package hu.webarticum.miniconnect.client.client;
 
 import java.util.concurrent.Callable;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+
+import org.jline.reader.Highlighter;
 
 import hu.webarticum.miniconnect.api.MiniSession;
 import hu.webarticum.miniconnect.api.MiniSessionManager;
+import hu.webarticum.miniconnect.client.repl.AnsiUtil;
 import hu.webarticum.miniconnect.client.repl.HostPortInputRepl;
+import hu.webarticum.miniconnect.client.repl.KeywordCompleter;
+import hu.webarticum.miniconnect.client.repl.PatternHighlighter;
 import hu.webarticum.miniconnect.client.repl.PlainReplRunner;
 import hu.webarticum.miniconnect.client.repl.Repl;
 import hu.webarticum.miniconnect.client.repl.ReplRunner;
 import hu.webarticum.miniconnect.client.repl.RichReplRunner;
+import hu.webarticum.miniconnect.lang.ImmutableMap;
 import hu.webarticum.miniconnect.messenger.adapter.MessengerSessionManager;
 import hu.webarticum.miniconnect.server.ClientMessenger;
 import hu.webarticum.miniconnect.server.ServerConstants;
+import hu.webarticum.regexbee.Bee;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -82,10 +91,31 @@ public class ClientMain implements Callable<Integer> {
     
     private static ReplRunner createReplRunner() {
         if (System.console() != null) {
-            return new RichReplRunner(SqlRepl.KEYWORDS);
+            return new RichReplRunner(createHighlighter(), new KeywordCompleter(SqlRepl.KEYWORDS));
         }
         
         return new PlainReplRunner(System.in, System.out); // NOSONAR System.out is necessary
+    }
+    
+    private static Highlighter createHighlighter() {
+        Pattern pattern =
+                Bee
+                        .then(Bee.DEFAULT_WORD_BOUNDARY)
+                        .then(Bee.oneFixedOf(SqlRepl.KEYWORDS.asList())
+                        .then(Bee.DEFAULT_WORD_BOUNDARY)
+                        .as("keyword"))
+                .or(Bee.fixedChar('@').then(Bee.ASCII_WORD).as("variable"))
+                .or(Bee.quoted('\'', '\\').as("singlequoted"))
+                .or(Bee.quoted('"', '\\').as("doublequoted"))
+                .or(Bee.quoted('`', '`').as("backticked"))
+                .toPattern(Pattern.CASE_INSENSITIVE);
+        ImmutableMap<String, Function<String, String>> formatters = ImmutableMap.of(
+                "keyword", AnsiUtil::formatAsKeyword,
+                "variable", AnsiUtil::formatAsVariable,
+                "singlequoted", AnsiUtil::formatAsString,
+                "doublequoted", AnsiUtil::formatAsQuotedIdentifier,
+                "backticked", AnsiUtil::formatAsQuotedIdentifier);
+        return new PatternHighlighter(pattern, formatters);
     }
 
 }

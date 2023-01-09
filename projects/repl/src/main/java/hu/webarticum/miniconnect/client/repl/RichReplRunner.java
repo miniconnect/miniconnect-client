@@ -2,29 +2,33 @@ package hu.webarticum.miniconnect.client.repl;
 
 import java.io.IOException;
 
+import org.jline.reader.Completer;
+import org.jline.reader.Highlighter;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
-import hu.webarticum.miniconnect.lang.ImmutableList;
-
 public class RichReplRunner implements ReplRunner {
     
-    private final ImmutableList<String> keywords;
+    private final Highlighter highlighter;
+    
+    private final Completer completer;
     
     private final AnsiAppendable out = new RichAnsiAppendable(System.out); // NOSONAR System.out is necessary
     
     
     public RichReplRunner() {
-        this(ImmutableList.empty());
+        this(new DefaultHighlighter(), null);
     }
 
-    public RichReplRunner(ImmutableList<String> keywords) {
-        this.keywords = keywords;
+    public RichReplRunner(Highlighter highlighter, Completer completer) {
+        this.highlighter = highlighter;
+        this.completer = completer;
     }
     
 
@@ -84,12 +88,12 @@ public class RichReplRunner implements ReplRunner {
                 .terminal(terminal)
                 .parser(new DefaultParser())
                 .history(new DefaultHistory())
-                .highlighter(new KeywordHighlighter(keywords))
-                .completer(new KeywordCompleter(keywords))
+                .highlighter(highlighter)
+                .completer(completer)
                 .variable(LineReader.BLINK_MATCHING_PAREN, 0)
                 .build();
     }
-
+    
     private String composePrompt(Repl repl, boolean wasComplete) throws IOException {
         StringBuilder promptBuilder = new StringBuilder();
         AnsiAppendable promptOut = new RichAnsiAppendable(promptBuilder);
