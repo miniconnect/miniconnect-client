@@ -26,7 +26,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "mini-repl")
+@Command(name = "micl", helpCommand = true)
 public class ClientMain implements Callable<Integer> {
 
     private static final String DEFAULT_HOST = "localhost";
@@ -40,6 +40,13 @@ public class ClientMain implements Callable<Integer> {
             defaultValue = "")
     public String serverAddressArg;
 
+    @Option(
+            names = { "-h", "--help" },
+            arity = "0",
+            usageHelp = true,
+            description = "Prints this help")
+    public boolean helpRequested;
+    
     @Option(
             names = { "-i", "--interactive-input" },
             arity = "0..1",
