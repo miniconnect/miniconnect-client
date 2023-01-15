@@ -31,11 +31,13 @@ public class SqlRepl implements Repl {
     // FIXME
     public static final ImmutableList<String> KEYWORDS = ImmutableList.of(
             "data", "help", "exit", "quit",
-            "use", "set", "select", "update", "insert", "replace", "delete",
-            "from", "into", "values", "where", "order", "by", "limit",
-            "join", "left", "inner", "outer", "on",
-            "asc", "desc", "nulls", "first", "last",
-            "between", "and", "is", "not", "null");
+            "select", "insert", "replace", "update", "delete",
+            "show", "call", "use", "set",
+            "as", "count", "from", "unit", "into",
+            "where", "and", "between", "is", "not", "null", "like",
+            "order", "by", "asc", "desc", "nulls", "first", "last", "limit",
+            "values", "schemas", "databases", "tables",
+            "left", "inner", "outer", "join", "on", "union");
     
     
     private static final BeeFragment TERMINATOR_FRAGMENT = Bee
