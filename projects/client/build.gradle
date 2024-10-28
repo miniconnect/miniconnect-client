@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'application'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'nebula.deb' version '9.1.1'
+    id "com.netflix.nebula.ospackage" version "11.8.1"
 }
 
 apply from: 'helpers.gradle'
@@ -47,7 +47,7 @@ run {
 }
 
 
-task buildDeb(type: Deb, dependsOn: ['jar']) {
+task buildDebPackage(type: Deb, dependsOn: ['jar']) {
     File jarFile = jar.archiveFile.getAsFile().get();
     String jarFileName = jarFile.getName()
     
@@ -88,7 +88,7 @@ task buildDeb(type: Deb, dependsOn: ['jar']) {
     permissionGroup "root"
     
     packageName = deploymentName
-    version = project.version
+    version =  project.version
     release = null
     maintainer = maintainerName + ' <' + maintainerEmail + '>'
     url = websiteUrl
