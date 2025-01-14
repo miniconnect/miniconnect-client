@@ -1,5 +1,8 @@
 package hu.webarticum.miniconnect.client.client;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.SocketException;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -61,7 +64,25 @@ public class ClientMain implements Callable<Integer> {
     }
     
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
+        try {
+            return callThrowing();
+        } catch (Exception e) {
+            if (e instanceof UncheckedIOException) {
+                IOException cause = ((UncheckedIOException) e).getCause();
+                if (cause instanceof SocketException) {
+                    String message = ((SocketException) cause).getMessage();
+                    printError("Server connection closed: " + message);
+                    return 2;
+                }
+            }
+            printError("Unexpected error occurred");
+            e.printStackTrace(System.err);
+            return 1;
+        }
+    }
+    
+    public Integer callThrowing() throws Exception {
         String host = DEFAULT_HOST;
         int port = DEFAULT_PORT;
         boolean runHostPortInputRepl = interactiveInputArg;
@@ -123,6 +144,10 @@ public class ClientMain implements Callable<Integer> {
                 "doublequoted", AnsiUtil::formatAsQuotedIdentifier,
                 "backticked", AnsiUtil::formatAsQuotedIdentifier);
         return new PatternHighlighter(pattern, formatters);
+    }
+    
+    private void printError(String message) {
+        System.out.println("\nERROR: " + message);
     }
 
 }
