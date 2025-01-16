@@ -106,7 +106,11 @@ public class ClientMain implements Callable<Integer> {
             host = hostPortInputRepl.getHost();
             port = hostPortInputRepl.getPort();
         }
-        try (ClientMessenger clientMessenger = new ClientMessenger(host, port)) {
+        try (ClientMessenger clientMessenger = new ClientMessenger(host, port, e -> {
+            // FIXME: this is a very dirty solution, instead, e.g., NIO should be used in the ReplRunner...
+            printError("Server connection closed: " + e.getMessage());
+            System.exit(2);
+        })) {
             MiniSessionManager sessionManager = new MessengerSessionManager(clientMessenger);
             try (MiniSession session = sessionManager.openSession()) {
                 String titleMessage = SqlRepl.DEFAULT_TITLE_MESSAGE + " - " + host + ":" + port;
