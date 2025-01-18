@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -99,7 +101,15 @@ public class ClientMain implements Callable<Integer> {
                 host = serverAddressArg;
             }
         }
-        ReplRunner replRunner = createReplRunner();
+        Thread outerThread = Thread.currentThread();
+        CompletableFuture<Throwable> messengerException = new CompletableFuture<>();
+        ReplRunner replRunner = createReplRunner(e -> {
+            String message = messengerException.isDone() ?
+                    "Server connection closed: " + messengerException.getNow(null).getMessage() :
+                    e.getMessage();
+            closePrompt();
+            printError(message);
+        });
         if (runHostPortInputRepl) {
             HostPortInputRepl hostPortInputRepl = new HostPortInputRepl(host, port);
             replRunner.run(hostPortInputRepl);
@@ -107,9 +117,8 @@ public class ClientMain implements Callable<Integer> {
             port = hostPortInputRepl.getPort();
         }
         try (ClientMessenger clientMessenger = new ClientMessenger(host, port, e -> {
-            // FIXME: this is a very dirty solution, instead, e.g., NIO should be used in the ReplRunner...
-            printError("Server connection closed: " + e.getMessage());
-            System.exit(2);
+            messengerException.complete(e);
+            outerThread.interrupt();
         })) {
             MiniSessionManager sessionManager = new MessengerSessionManager(clientMessenger);
             try (MiniSession session = sessionManager.openSession()) {
@@ -121,12 +130,12 @@ public class ClientMain implements Callable<Integer> {
         return 0;
     }
     
-    private static ReplRunner createReplRunner() {
+    private static ReplRunner createReplRunner(Consumer<Exception> exceptionHandler) {
         if (System.console() != null) {
-            return new RichReplRunner(createHighlighter(), new KeywordCompleter(SqlRepl.KEYWORDS));
+            return new RichReplRunner(createHighlighter(), new KeywordCompleter(SqlRepl.KEYWORDS), exceptionHandler);
         }
         
-        return new PlainReplRunner(System.in, System.out); // NOSONAR System.out is necessary
+        return new PlainReplRunner(System.in, System.out, exceptionHandler); // NOSONAR System.out is necessary
     }
     
     private static Highlighter createHighlighter() {
@@ -149,9 +158,13 @@ public class ClientMain implements Callable<Integer> {
                 "backticked", AnsiUtil::formatAsQuotedIdentifier);
         return new PatternHighlighter(pattern, formatters);
     }
+
+    private void closePrompt() {
+        System.out.println("\n");
+    }
     
     private void printError(String message) {
-        System.out.println("\nERROR: " + message);
+        System.out.println("ERROR: " + message);
     }
 
 }

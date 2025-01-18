@@ -1,6 +1,7 @@
 package hu.webarticum.miniconnect.client.repl;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.jline.reader.Completer;
 import org.jline.reader.Highlighter;
@@ -19,16 +20,27 @@ public class RichReplRunner implements ReplRunner {
     
     private final Completer completer;
     
+    private final Consumer<Exception> exceptionHandler;
+    
     private final AnsiAppendable out = new RichAnsiAppendable(System.out); // NOSONAR System.out is necessary
     
     
     public RichReplRunner() {
-        this(new DefaultHighlighter(), null);
+        this(new DefaultHighlighter(), null, null);
+    }
+
+    public RichReplRunner(Consumer<Exception> exceptionHandler) {
+        this(new DefaultHighlighter(), null, exceptionHandler);
     }
 
     public RichReplRunner(Highlighter highlighter, Completer completer) {
+        this(highlighter, completer, null);
+    }
+
+    public RichReplRunner(Highlighter highlighter, Completer completer, Consumer<Exception> exceptionHandler) {
         this.highlighter = highlighter;
         this.completer = completer;
+        this.exceptionHandler = exceptionHandler != null ? exceptionHandler : e -> e.printStackTrace();
     }
     
 
@@ -36,8 +48,8 @@ public class RichReplRunner implements ReplRunner {
     public void run(Repl repl) {
         try {
             runThrows(repl);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            exceptionHandler.accept(e);
         }
     }
     
