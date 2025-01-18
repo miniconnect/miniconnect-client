@@ -98,7 +98,7 @@ public class PlainReplRunner implements ReplRunner {
             try {
                 Thread.sleep(sleep);
             } catch (InterruptedException e) {
-                throw new IOException("Reader thread was interrupted");
+                throw new IOException("Reader thread was interrupted", e);
             }
             if (sleep < 64) {
                 sleep = sleep * 4;

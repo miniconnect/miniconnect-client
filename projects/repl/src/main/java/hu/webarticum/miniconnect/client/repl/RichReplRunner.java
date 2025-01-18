@@ -7,7 +7,6 @@ import org.jline.reader.Completer;
 import org.jline.reader.Highlighter;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
@@ -63,13 +62,7 @@ public class RichReplRunner implements ReplRunner {
             boolean wasComplete = true;
             while (true) { // NOSONAR
                 String prompt = composePrompt(repl, wasComplete);
-                String line;
-                try {
-                    line = reader.readLine(prompt);
-                } catch (UserInterruptException e) {
-                    break;
-                }
-
+                String line = reader.readLine(prompt);
                 currentQueryBuilder.append(line);
                 String query = currentQueryBuilder.toString();
                 wasComplete = repl.isCommandComplete(query);
