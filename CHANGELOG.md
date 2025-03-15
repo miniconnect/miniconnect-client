@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 0.3.0
+
+Released on *2025-03-15*
+
+### Improved:
+
+- Removed all restrictions on executor services
+- Improved logging
+- Improved error handling in the REPL
+
+## Development:
+
+- Upgrade to gradle 8
+
+
 ## Version 0.2.0
 
 Released on *2023-12-16*
