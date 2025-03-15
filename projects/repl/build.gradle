@@ -8,5 +8,8 @@ targetCompatibility = 1.8
 description "MiniConnect REPL"
 
 dependencies {
-    implementation 'org.jline:jline:3.21.0'
+    implementation 'hu.webarticum:regexbee:0.4.0'
+    
+    api "hu.webarticum.miniconnect.api:api:${miniConnectApiVersion}"
+    api 'org.jline:jline:3.21.0'
 }

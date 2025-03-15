@@ -32,8 +32,8 @@ allprojects {
     group 'hu.webarticum.miniconnect.client'
     version automaticVersion
     
-    ext.miniConnectApiVersion = '0.1.0-SNAPSHOT'
-    ext.miniConnectVersion = '0.3.1-SNAPSHOT'
+    ext.miniConnectApiVersion = '0.3.0'
+    ext.miniConnectVersion = '0.6.0'
     
     repositories {
         mavenCentral()
@@ -66,6 +66,7 @@ subprojects {
         }
         
         tasks.withType(JavaCompile) {
+            options.encoding = 'UTF-8'
             options.release = 8
         }
         
@@ -76,6 +77,16 @@ subprojects {
         
         javadoc {
             options.addStringOption('Xdoclint:none', '-quiet')
+        }
+        
+        def moduleNamePrefix = 'hu.webarticum.miniconnect.'
+        def cleanProjectName = project.name.replaceAll(/\W/, ".")
+        def moduleName = "${moduleNamePrefix}${cleanProjectName}"
+        
+        jar {
+            manifest {
+                attributes('Automatic-Module-Name': moduleName)
+            }
         }
         
         test {

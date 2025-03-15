@@ -1,0 +1,8 @@
+#!/bin/bash
+
+JAVA_ROOT="@JAVA_ROOT@";
+MAIN_JAR="${JAVA_ROOT}/@JAR_FILENAME@";
+LIB_DIR="${JAVA_ROOT}/lib";
+MAIN_CLASS="@MAIN_CLASS@"
+
+java -cp "${MAIN_JAR}:${LIB_DIR}/*" "${MAIN_CLASS}" $@

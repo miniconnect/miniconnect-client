@@ -1,14 +1,29 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'eclipse'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id "com.netflix.nebula.ospackage" version "11.8.1"
 }
+
+apply from: 'helpers.gradle'
+
+import org.apache.tools.ant.filters.ReplaceTokens
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-description "MiniConnect REPL"
+description "Command line database client for miniconnect"
+
+def deploymentName = 'miniconnect-client'
+def executableName = 'micl'
+def longExecutableName = deploymentName
+def maintainerName = 'Dávid Horváth'
+def maintainerEmail = 'horvath@webarticum.hu'
+def websiteUrl = 'https://github.com/miniconnect/miniconnect-client'
+def mainClassName = 'hu.webarticum.miniconnect.client.client.ClientMain'
+def longDescription = """Connects to the specified server via miniconnect protocol.
+It's basically a SQL REPL that you can use to run queries.
+It displays result sets and error responses in a friendly manner."""
 
 dependencies {
     implementation project(':repl')
@@ -24,9 +39,94 @@ dependencies {
 }
 
 application {
-    mainClass = "hu.webarticum.miniconnect.client.client.ClientMain"
+    mainClass = mainClassName
 }
 
 run {
     standardInput = System.in
+}
+
+
+task buildDebPackage(type: Deb, dependsOn: ['jar']) {
+    File jarFile = jar.archiveFile.getAsFile().get();
+    String jarFileName = jarFile.getName()
+    
+    doFirst {
+        mkdir 'build/deb-prepare'
+        
+        // TODO: generate from picocli
+        compressWithGzip9('packaging/deb/manpage', 'build/deb-prepare/manpage.gz')
+        
+        def changelogData = parseChangelogMarkdown('../../CHANGELOG.md')
+        buildDebianChangelog('build/deb-prepare/changelog', changelogData)
+        compressWithGzip9('build/deb-prepare/changelog', 'build/deb-prepare/changelog.Debian.gz')
+        
+        copy {
+            from (file('packaging/deb/copyright'))
+            into 'build/deb-prepare'
+            filteringCharset = 'UTF-8'
+            filter(ReplaceTokens, tokens: [
+                'CURRENT_YEAR': new Date().format('yyyy').toString(),
+            ])
+        }
+        
+        copy {
+            from (file('packaging/deb/start.sh'))
+            into 'build/deb-prepare'
+            filteringCharset = 'UTF-8'
+            filter(ReplaceTokens, tokens: [
+                'JAVA_ROOT': "/usr/share/${deploymentName}".toString(),
+                'JAR_FILENAME': jarFileName.toString(),
+                'MAIN_CLASS': mainClassName.toString(),
+            ])
+        }
+    }
+    
+    dirMode 0755
+    fileMode 0644
+    user "root"
+    permissionGroup "root"
+    
+    packageName = deploymentName
+    version =  project.version
+    release = null
+    maintainer = maintainerName + ' <' + maintainerEmail + '>'
+    url = websiteUrl
+    summary = project.description
+    packageDescription = longDescription
+    
+    
+    // TODO: that dependency should be set?
+    requires('default-jre').or('java8-runtime').or('java9-runtime')
+    requires('jarwrapper')
+    
+    from (jarFile) {
+        into "/usr/share/${deploymentName}"
+    }
+    
+    from (file('build/deb-prepare/copyright')) {
+        into "/usr/share/doc/${deploymentName}"
+    }
+    
+    from (file('build/deb-prepare/start.sh')) {
+        into '/usr/bin'
+        rename(/.*/, executableName)
+        fileMode 0755
+    }
+    
+    from (file('build/deb-prepare/manpage.gz')) {
+        into '/usr/share/man/man1'
+        rename(/.*/, "${deploymentName}.1.gz")
+    }
+    
+    from (file('build/deb-prepare/changelog.Debian.gz')) {
+        into "/usr/share/doc/${deploymentName}"
+    }
+    
+    link("/usr/bin/${longExecutableName}", executableName)
+    link("/usr/share/man/man1/${executableName}.1.gz", "${deploymentName}.1.gz")
+    
+    from (configurations.runtimeClasspath) {
+        into "/usr/share/${deploymentName}/lib"
+    }
 }

@@ -28,6 +28,17 @@ public class SqlRepl implements Repl {
     
     public static final String DEFAULT_TITLE_MESSAGE = "Welcome in miniConnect SQL REPL!";
     
+    // FIXME
+    public static final ImmutableList<String> KEYWORDS = ImmutableList.of(
+            "data", "help", "exit", "quit",
+            "select", "insert", "replace", "update", "delete",
+            "show", "call", "use", "set",
+            "as", "count", "from", "unit", "into",
+            "where", "and", "between", "is", "not", "null", "like",
+            "order", "by", "asc", "desc", "nulls", "first", "last", "limit",
+            "values", "schemas", "databases", "tables",
+            "left", "inner", "outer", "join", "on", "union");
+    
     
     private static final BeeFragment TERMINATOR_FRAGMENT = Bee
             .then(Bee.WHITESPACE.any())
@@ -69,6 +80,14 @@ public class SqlRepl implements Repl {
             .then(TERMINATOR_FRAGMENT.optional())
             .then(Bee.WHITESPACE.any())
             ;
+
+    // FIXME: is there any more shophisticated method?
+    private static final BeeFragment OPTIONALLY_TERMINATED_QUERY_FRAGMENT = Bee
+            .then(Bee.WHITESPACE.any())
+            .then(Bee.oneFixedOf("use", "set"))
+            .then(Bee.WHITESPACE)
+            .then(Bee.ANYTHING)
+            ;
     
     private static final BeeFragment QUERY_FRAGMENT = Bee
             .then(new CharacterRangeFragment(false, "'\"`;").more(Greediness.POSSESSIVE)
@@ -79,6 +98,14 @@ public class SqlRepl implements Repl {
             .then(TERMINATOR_FRAGMENT)
             .then(Bee.WHITESPACE.any())
             ;
+
+    private static final BeeFragment TERMINATOR_END_FRAGMENT = Bee
+            .then(TERMINATOR_FRAGMENT)
+            .then(Bee.WHITESPACE.any())
+            .then(Bee.END)
+            ;
+
+    private static final Pattern TERMINATOR_END_PATTERN = TERMINATOR_END_FRAGMENT.toPattern();
     
     private static final Pattern DATA_PATTERN = DATA_FRAGMENT.toPattern(Pattern.CASE_INSENSITIVE);
     
@@ -91,6 +118,7 @@ public class SqlRepl implements Repl {
             .then(DATA_FRAGMENT
                     .or(HELP_FRAGMENT)
                     .or(QUIT_FRAGMENT)
+                    .or(OPTIONALLY_TERMINATED_QUERY_FRAGMENT)
                     .or(QUERY_FRAGMENT))
             .then(Bee.END)
             .toPattern(Pattern.MULTILINE | Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
@@ -189,9 +217,10 @@ public class SqlRepl implements Repl {
             return false;
         }
 
+        String sql = TERMINATOR_END_PATTERN.matcher(command).replaceAll("");
         MiniResult result = null;
         try {
-            result = session.execute(command);
+            result = session.execute(sql);
         } catch (Exception e) {
             printException(e, out);
         }

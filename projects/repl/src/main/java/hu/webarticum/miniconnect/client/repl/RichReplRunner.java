@@ -1,10 +1,13 @@
 package hu.webarticum.miniconnect.client.repl;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
+import org.jline.reader.Completer;
+import org.jline.reader.Highlighter;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
@@ -12,15 +15,40 @@ import org.jline.terminal.TerminalBuilder;
 
 public class RichReplRunner implements ReplRunner {
     
+    private final Highlighter highlighter;
+    
+    private final Completer completer;
+    
+    private final Consumer<Exception> exceptionHandler;
+    
     private final AnsiAppendable out = new RichAnsiAppendable(System.out); // NOSONAR System.out is necessary
+    
+    
+    public RichReplRunner() {
+        this(new DefaultHighlighter(), null, null);
+    }
+
+    public RichReplRunner(Consumer<Exception> exceptionHandler) {
+        this(new DefaultHighlighter(), null, exceptionHandler);
+    }
+
+    public RichReplRunner(Highlighter highlighter, Completer completer) {
+        this(highlighter, completer, null);
+    }
+
+    public RichReplRunner(Highlighter highlighter, Completer completer, Consumer<Exception> exceptionHandler) {
+        this.highlighter = highlighter;
+        this.completer = completer;
+        this.exceptionHandler = exceptionHandler != null ? exceptionHandler : e -> e.printStackTrace();
+    }
     
 
     @Override
     public void run(Repl repl) {
         try {
             runThrows(repl);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            exceptionHandler.accept(e);
         }
     }
     
@@ -31,20 +59,15 @@ public class RichReplRunner implements ReplRunner {
         
         try (Terminal terminal = createTerminal()) {
             LineReader reader = createLineReader(terminal);
+            boolean wasComplete = true;
             while (true) { // NOSONAR
-                String prompt = composePrompt(repl);
-                String line;
-                try {
-                    line = reader.readLine(prompt);
-                } catch (UserInterruptException e) {
-                    break;
-                }
-
+                String prompt = composePrompt(repl, wasComplete);
+                String line = reader.readLine(prompt);
                 currentQueryBuilder.append(line);
                 String query = currentQueryBuilder.toString();
-                if (!repl.isCommandComplete(query)) {
+                wasComplete = repl.isCommandComplete(query);
+                if (!wasComplete) {
                     currentQueryBuilder.append('\n');
-                    repl.prompt2(out);
                     continue;
                 }
                 currentQueryBuilder = new StringBuilder();
@@ -70,14 +93,20 @@ public class RichReplRunner implements ReplRunner {
                 .terminal(terminal)
                 .parser(new DefaultParser())
                 .history(new DefaultHistory())
+                .highlighter(highlighter)
+                .completer(completer)
                 .variable(LineReader.BLINK_MATCHING_PAREN, 0)
                 .build();
     }
-
-    private String composePrompt(Repl repl) throws IOException {
+    
+    private String composePrompt(Repl repl, boolean wasComplete) throws IOException {
         StringBuilder promptBuilder = new StringBuilder();
         AnsiAppendable promptOut = new RichAnsiAppendable(promptBuilder);
-        repl.prompt(promptOut);
+        if (wasComplete) {
+            repl.prompt(promptOut);
+        } else {
+            repl.prompt2(promptOut);
+        }
         return promptBuilder.toString();
     }
     

@@ -1,23 +1,37 @@
 package hu.webarticum.miniconnect.client.client;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.SocketException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+
+import org.jline.reader.Highlighter;
 
 import hu.webarticum.miniconnect.api.MiniSession;
 import hu.webarticum.miniconnect.api.MiniSessionManager;
+import hu.webarticum.miniconnect.client.repl.AnsiUtil;
 import hu.webarticum.miniconnect.client.repl.HostPortInputRepl;
+import hu.webarticum.miniconnect.client.repl.KeywordCompleter;
+import hu.webarticum.miniconnect.client.repl.PatternHighlighter;
 import hu.webarticum.miniconnect.client.repl.PlainReplRunner;
 import hu.webarticum.miniconnect.client.repl.Repl;
 import hu.webarticum.miniconnect.client.repl.ReplRunner;
 import hu.webarticum.miniconnect.client.repl.RichReplRunner;
+import hu.webarticum.miniconnect.lang.ImmutableMap;
 import hu.webarticum.miniconnect.messenger.adapter.MessengerSessionManager;
 import hu.webarticum.miniconnect.server.ClientMessenger;
 import hu.webarticum.miniconnect.server.ServerConstants;
+import hu.webarticum.regexbee.Bee;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "mini-repl")
+@Command(name = "micl", helpCommand = true)
 public class ClientMain implements Callable<Integer> {
 
     private static final String DEFAULT_HOST = "localhost";
@@ -32,6 +46,13 @@ public class ClientMain implements Callable<Integer> {
     public String serverAddressArg;
 
     @Option(
+            names = { "-h", "--help" },
+            arity = "0",
+            usageHelp = true,
+            description = "Prints this help")
+    public boolean helpRequested;
+    
+    @Option(
             names = { "-i", "--interactive-input" },
             arity = "0..1",
             description = "Get server host and port interactively",
@@ -45,7 +66,25 @@ public class ClientMain implements Callable<Integer> {
     }
     
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
+        try {
+            return callThrowing();
+        } catch (Exception e) {
+            if (e instanceof UncheckedIOException) {
+                IOException cause = ((UncheckedIOException) e).getCause();
+                if (cause instanceof SocketException) {
+                    String message = ((SocketException) cause).getMessage();
+                    printError("Server connection closed: " + message);
+                    return 2;
+                }
+            }
+            printError("Unexpected error occurred");
+            e.printStackTrace(System.err);
+            return 1;
+        }
+    }
+    
+    public Integer callThrowing() throws Exception {
         String host = DEFAULT_HOST;
         int port = DEFAULT_PORT;
         boolean runHostPortInputRepl = interactiveInputArg;
@@ -62,14 +101,25 @@ public class ClientMain implements Callable<Integer> {
                 host = serverAddressArg;
             }
         }
-        ReplRunner replRunner = createReplRunner();
+        Thread outerThread = Thread.currentThread();
+        CompletableFuture<Throwable> messengerException = new CompletableFuture<>();
+        ReplRunner replRunner = createReplRunner(e -> {
+            String message = messengerException.isDone() ?
+                    "Server connection closed: " + messengerException.getNow(null).getMessage() :
+                    e.getMessage();
+            closePrompt();
+            printError(message);
+        });
         if (runHostPortInputRepl) {
             HostPortInputRepl hostPortInputRepl = new HostPortInputRepl(host, port);
             replRunner.run(hostPortInputRepl);
             host = hostPortInputRepl.getHost();
             port = hostPortInputRepl.getPort();
         }
-        try (ClientMessenger clientMessenger = new ClientMessenger(host, port)) {
+        try (ClientMessenger clientMessenger = new ClientMessenger(host, port, e -> {
+            messengerException.complete(e);
+            outerThread.interrupt();
+        })) {
             MiniSessionManager sessionManager = new MessengerSessionManager(clientMessenger);
             try (MiniSession session = sessionManager.openSession()) {
                 String titleMessage = SqlRepl.DEFAULT_TITLE_MESSAGE + " - " + host + ":" + port;
@@ -80,12 +130,41 @@ public class ClientMain implements Callable<Integer> {
         return 0;
     }
     
-    private static ReplRunner createReplRunner() {
+    private static ReplRunner createReplRunner(Consumer<Exception> exceptionHandler) {
         if (System.console() != null) {
-            return new RichReplRunner();
+            return new RichReplRunner(createHighlighter(), new KeywordCompleter(SqlRepl.KEYWORDS), exceptionHandler);
         }
         
-        return new PlainReplRunner(System.in, System.out); // NOSONAR System.out is necessary
+        return new PlainReplRunner(System.in, System.out, exceptionHandler); // NOSONAR System.out is necessary
+    }
+    
+    private static Highlighter createHighlighter() {
+        Pattern pattern =
+                Bee
+                        .then(Bee.DEFAULT_WORD_BOUNDARY)
+                        .then(Bee.oneFixedOf(SqlRepl.KEYWORDS.asList())
+                        .then(Bee.DEFAULT_WORD_BOUNDARY)
+                        .as("keyword"))
+                .or(Bee.fixedChar('@').then(Bee.ASCII_WORD).as("variable"))
+                .or(Bee.quoted('\'', '\\').as("singlequoted"))
+                .or(Bee.quoted('"', '\\').as("doublequoted"))
+                .or(Bee.quoted('`', '`').as("backticked"))
+                .toPattern(Pattern.CASE_INSENSITIVE);
+        ImmutableMap<String, Function<String, String>> formatters = ImmutableMap.of(
+                "keyword", AnsiUtil::formatAsKeyword,
+                "variable", AnsiUtil::formatAsVariable,
+                "singlequoted", AnsiUtil::formatAsString,
+                "doublequoted", AnsiUtil::formatAsQuotedIdentifier,
+                "backticked", AnsiUtil::formatAsQuotedIdentifier);
+        return new PatternHighlighter(pattern, formatters);
+    }
+
+    private void closePrompt() {
+        System.out.println("\n");
+    }
+    
+    private void printError(String message) {
+        System.out.println("ERROR: " + message);
     }
 
 }
