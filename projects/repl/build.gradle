@@ -2,14 +2,11 @@ plugins {
     id 'java-library'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-description "MiniConnect REPL"
+description = "MiniConnect REPL"
 
 dependencies {
     implementation 'hu.webarticum:regexbee:0.4.0'
     
     api "hu.webarticum.miniconnect.api:api:${miniConnectApiVersion}"
-    api 'org.jline:jline:3.21.0'
+    api 'org.jline:jline:3.30.4'
 }
