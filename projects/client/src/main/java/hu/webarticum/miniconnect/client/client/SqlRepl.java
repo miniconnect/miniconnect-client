@@ -14,12 +14,15 @@ import hu.webarticum.regexbee.BeeFragment;
 import hu.webarticum.regexbee.Greediness;
 import hu.webarticum.regexbee.character.CharacterRangeFragment;
 import hu.webarticum.miniconnect.api.MiniError;
+import hu.webarticum.miniconnect.api.MiniErrorException;
 import hu.webarticum.miniconnect.api.MiniLargeDataSaveResult;
 import hu.webarticum.miniconnect.api.MiniResult;
 import hu.webarticum.miniconnect.api.MiniSession;
 import hu.webarticum.miniconnect.client.repl.AnsiAppendable;
 import hu.webarticum.miniconnect.client.repl.AnsiUtil;
 import hu.webarticum.miniconnect.client.repl.Repl;
+import hu.webarticum.miniconnect.impl.result.StoredError;
+import hu.webarticum.miniconnect.impl.result.StoredResult;
 import hu.webarticum.miniconnect.lang.ImmutableList;
 import hu.webarticum.miniconnect.record.ResultTable;
 
@@ -221,6 +224,8 @@ public class SqlRepl implements Repl {
         MiniResult result = null;
         try {
             result = session.execute(sql);
+        } catch (MiniErrorException e) {
+            result = new StoredResult(new StoredError(e.code(), e.sqlState(), e.message()));
         } catch (Exception e) {
             printException(e, out);
         }
