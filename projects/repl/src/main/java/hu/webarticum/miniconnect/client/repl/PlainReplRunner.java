@@ -32,12 +32,15 @@ public class PlainReplRunner implements ReplRunner {
     public void run(Repl repl) {
         try {
             runThrows(repl);
+        } catch (InterruptedException e) {
+            bye(repl);
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             exceptionHandler.accept(e);
         }
     }
 
-    public void runThrows(Repl repl) throws IOException {
+    private void runThrows(Repl repl) throws IOException, InterruptedException {
         repl.welcome(out);
         repl.prompt(out);
 
@@ -59,10 +62,18 @@ public class PlainReplRunner implements ReplRunner {
             repl.prompt(out);
         }
 
-        repl.bye(out);
+        bye(repl);
     }
     
-    private String readLine(Reader reader) throws IOException {
+    private void bye(Repl repl) {
+        try {
+            repl.bye(out);
+        } catch (IOException e) {
+            // nothing to do
+        }
+    }
+    
+    private String readLine(Reader reader) throws IOException, InterruptedException {
         if (wasEndReached) {
             return null;
         }
@@ -92,14 +103,10 @@ public class PlainReplRunner implements ReplRunner {
         return resultBuilder.toString();
     }
     
-    private int readNextChar(Reader reader) throws IOException {
+    private int readNextChar(Reader reader) throws IOException, InterruptedException {
         int sleep = 1;
         while (!reader.ready()) {
-            try {
-                Thread.sleep(sleep);
-            } catch (InterruptedException e) {
-                throw new IOException("Reader thread was interrupted", e);
-            }
+            Thread.sleep(sleep);
             if (sleep < 64) {
                 sleep = sleep * 4;
             }
