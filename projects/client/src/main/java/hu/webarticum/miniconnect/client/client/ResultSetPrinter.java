@@ -22,7 +22,11 @@ public class ResultSetPrinter {
 
     private static final int ROWS_BUFFER_SIZE = 20;
 
-    private static final int MAXIMUM_STRING_LENGTH = 20;
+    private static final int LOW_MAX_STRING_LENGTH = 20;
+
+    private static final int HIGH_MAX_STRING_LENGTH = 100;
+
+    private static final int ESTIMATED_MAX_TABLE_WIDTH = 120;
     
     private static final String STRING_OVERFLOW_ELLIPSIS = "...";
 
@@ -67,17 +71,25 @@ public class ResultSetPrinter {
             widths[i] = columnName.length();
         }
         
+        int numericColumnCount = 0;
         if (!decodedRows.isEmpty()) {
             for (int i = 0; i < columnCount; i++) {
-                if (shouldAlign(valueTranslators.get(i))) {
+                if (isNumeric(valueTranslators.get(i))) {
                     aligns[i] = true;
+                    numericColumnCount++;
                 }
             }
         }
         
+        int decorationWidth = (columnCount * 3) + 1;
+        int estimatedNumericWidth = numericColumnCount * 3;
+        int fullRemainingStringWidth = ESTIMATED_MAX_TABLE_WIDTH - decorationWidth - estimatedNumericWidth;
+        int nonNumericColumnCount = columnCount - numericColumnCount;
+        int rawMaxStringLength = (int) Math.ceil(fullRemainingStringWidth / ((double) nonNumericColumnCount));
+        int maxStringLength = Math.max(LOW_MAX_STRING_LENGTH, Math.min(HIGH_MAX_STRING_LENGTH, rawMaxStringLength));
         List<ImmutableList<ValueOutputHolder>> outputRows = new ArrayList<>(decodedRows.size());
         for (ImmutableList<Object> decodedRow : decodedRows) {
-            ImmutableList<ValueOutputHolder> outputRow = decodedRow.map((i, v) -> outputOf(v, aligns[i]));
+            ImmutableList<ValueOutputHolder> outputRow = decodedRow.map((i, v) -> outputOf(v, maxStringLength, aligns[i]));
             outputRows.add(outputRow);
             for (int i = 0; i < columnCount; i++) {
                 String stringValue = outputRow.get(i).plainString;
@@ -100,7 +112,7 @@ public class ResultSetPrinter {
         out.append('\n');
     }
     
-    private boolean shouldAlign(ValueTranslator valueTranslator) {
+    private boolean isNumeric(ValueTranslator valueTranslator) {
         Class<?> clazz;
         try {
             clazz = Class.forName(valueTranslator.assuredClazzName());
@@ -177,8 +189,8 @@ public class ResultSetPrinter {
         return new ValueOutputHolder(headerName, headerName, AnsiUtil.formatAsHeader(headerName));
     }
     
-    private ValueOutputHolder outputOf(Object value, boolean align) {
-        String plainString = stringify(value);
+    private ValueOutputHolder outputOf(Object value, int maxStringLength, boolean align) {
+        String plainString = stringify(value, maxStringLength);
         String ansiString = AnsiUtil.escapeText(plainString);
         if (value == null) {
             ansiString = AnsiUtil.formatAsNone(ansiString);
@@ -188,7 +200,7 @@ public class ResultSetPrinter {
         return new ValueOutputHolder(value, plainString, ansiString);
     }
     
-    private String stringify(Object value) {
+    private String stringify(Object value, int maxStringLength) {
         if (value == null) {
             return NULL_PLACEHOLDER;
         } else if (
@@ -201,17 +213,17 @@ public class ResultSetPrinter {
                 value instanceof Temporal) {
             return value.toString();
         } else {
-            return shortenString(value.toString());
+            return shortenString(value.toString(), maxStringLength);
         }
     }
     
-    private String shortenString(String stringValue) {
+    private String shortenString(String stringValue, int maxLength) {
         int length = stringValue.length();
-        if (length <= MAXIMUM_STRING_LENGTH) {
+        if (length <= maxLength) {
             return stringValue;
         }
         
-        int innerLength = Math.max(1, MAXIMUM_STRING_LENGTH - STRING_OVERFLOW_ELLIPSIS.length());
+        int innerLength = Math.max(1, maxLength - STRING_OVERFLOW_ELLIPSIS.length());
         return stringValue.substring(0, innerLength) + STRING_OVERFLOW_ELLIPSIS;
     }
     
