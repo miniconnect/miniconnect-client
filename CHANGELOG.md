@@ -1,5 +1,20 @@
 # Changelog
 
+
+## Version 0.4.0
+
+Released on *2025-09-29*
+
+### Improved:
+
+- Improved result column width handling
+- Improved message printing
+
+### Development:
+
+- Improved project tools
+
+
 ## Version 0.3.0
 
 Released on *2025-03-15*
@@ -10,7 +25,7 @@ Released on *2025-03-15*
 - Improved logging
 - Improved error handling in the REPL
 
-## Development:
+### Development:
 
 - Upgrade to gradle 8
 

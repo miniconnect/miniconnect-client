@@ -7,6 +7,7 @@ import org.jline.reader.Completer;
 import org.jline.reader.Highlighter;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
@@ -46,38 +47,46 @@ public class RichReplRunner implements ReplRunner {
     @Override
     public void run(Repl repl) {
         try {
-            runThrows(repl);
+            runTerminal(repl);
         } catch (Exception e) {
             exceptionHandler.accept(e);
         }
     }
-    
-    public void runThrows(Repl repl) throws IOException {
-        repl.welcome(out);
 
-        StringBuilder currentQueryBuilder = new StringBuilder();
-        
+    public void runTerminal(Repl repl) throws IOException {
         try (Terminal terminal = createTerminal()) {
-            LineReader reader = createLineReader(terminal);
-            boolean wasComplete = true;
-            while (true) { // NOSONAR
-                String prompt = composePrompt(repl, wasComplete);
-                String line = reader.readLine(prompt);
-                currentQueryBuilder.append(line);
-                String query = currentQueryBuilder.toString();
-                wasComplete = repl.isCommandComplete(query);
-                if (!wasComplete) {
-                    currentQueryBuilder.append('\n');
-                    continue;
-                }
-                currentQueryBuilder = new StringBuilder();
-                if (!repl.execute(query, out)) {
-                    break;
-                }
+            repl.welcome(out);
+            terminal.output();
+            try {
+                runThrows(repl, terminal);
+            } catch (UserInterruptException e) {
+                // nothing to do
+            } catch (Exception e) {
+                throw e;
+            }
+            repl.bye(out);
+        }
+    }
+    
+    public void runThrows(Repl repl, Terminal terminal) throws IOException {
+        StringBuilder currentQueryBuilder = new StringBuilder();
+        LineReader reader = createLineReader(terminal);
+        boolean wasComplete = true;
+        while (true) { // NOSONAR
+            String prompt = composePrompt(repl, wasComplete);
+            String line = reader.readLine(prompt);
+            currentQueryBuilder.append(line);
+            String query = currentQueryBuilder.toString();
+            wasComplete = repl.isCommandComplete(query);
+            if (!wasComplete) {
+                currentQueryBuilder.append('\n');
+                continue;
+            }
+            currentQueryBuilder = new StringBuilder();
+            if (!repl.execute(query, out)) {
+                break;
             }
         }
-        
-        repl.bye(out);
     }
 
     private Terminal createTerminal() throws IOException {

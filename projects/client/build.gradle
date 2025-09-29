@@ -1,18 +1,15 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id "com.netflix.nebula.ospackage" version "11.8.1"
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.netflix.nebula.ospackage' version '11.11.2'
 }
 
 apply from: 'helpers.gradle'
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-description "Command line database client for miniconnect"
+description = "Command line database client for miniconnect"
 
 def deploymentName = 'miniconnect-client'
 def executableName = 'micl'
@@ -33,9 +30,9 @@ dependencies {
     implementation "hu.webarticum.miniconnect:messenger:${miniConnectVersion}"
     implementation "hu.webarticum.miniconnect:server:${miniConnectVersion}"
     implementation 'hu.webarticum:regexbee:0.4.0'
-    implementation 'info.picocli:picocli:4.6.3'
+    implementation 'info.picocli:picocli:4.7.7'
     
-    runtimeOnly 'org.slf4j:slf4j-nop:1.7.36'
+    runtimeOnly 'org.slf4j:slf4j-nop:2.0.17'
 }
 
 application {
@@ -47,7 +44,8 @@ run {
 }
 
 
-task buildDebPackage(type: Deb, dependsOn: ['jar']) {
+tasks.register('buildDebPackage', Deb) {
+    dependsOn(tasks.named('jar'))
     File jarFile = jar.archiveFile.getAsFile().get();
     String jarFileName = jarFile.getName()
     
@@ -82,10 +80,14 @@ task buildDebPackage(type: Deb, dependsOn: ['jar']) {
         }
     }
     
-    dirMode 0755
-    fileMode 0644
-    user "root"
-    permissionGroup "root"
+    dirPermissions {
+        unix(0755)
+    }
+    filePermissions {
+        unix(0644)
+    }
+    user = "root"
+    permissionGroup = "root"
     
     packageName = deploymentName
     version =  project.version
@@ -111,7 +113,9 @@ task buildDebPackage(type: Deb, dependsOn: ['jar']) {
     from (file('build/deb-prepare/start.sh')) {
         into '/usr/bin'
         rename(/.*/, executableName)
-        fileMode 0755
+        filePermissions {
+            unix(0755)
+        }
     }
     
     from (file('build/deb-prepare/manpage.gz')) {
