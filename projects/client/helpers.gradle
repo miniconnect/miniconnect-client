@@ -73,8 +73,7 @@ ext.parseChangelogMarkdown = { path ->
                 def dateString = dateMatcher.group(1);
                 def dateObj = (LocalDate
                     .parse(dateString, DateTimeFormatter.ofPattern('yyyy-MM-dd'))
-                    .atStartOfDay()
-                    .atZone(ZoneId.of("Europe/Budapest"))
+                    .atStartOfDay(ZoneId.of("Europe/Budapest"))
                 );
                 def date = dateObj.format(
                     DateTimeFormatter.ofPattern('E, d MMM yyyy HH:mm:ss Z').withLocale(Locale.US)
