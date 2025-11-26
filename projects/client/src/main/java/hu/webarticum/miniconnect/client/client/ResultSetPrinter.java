@@ -1,10 +1,11 @@
 package hu.webarticum.miniconnect.client.client;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import hu.webarticum.miniconnect.api.MiniColumnHeader;
 import hu.webarticum.miniconnect.client.repl.AnsiAppendable;
@@ -29,6 +30,8 @@ public class ResultSetPrinter {
     private static final int ESTIMATED_MAX_TABLE_WIDTH = 120;
     
     private static final String STRING_OVERFLOW_ELLIPSIS = "...";
+    
+    private static final Locale OUTPUT_LOCALE = Locale.ENGLISH;
 
     
     public void print(ResultTable resultTable, AnsiAppendable out) throws IOException {
@@ -171,8 +174,7 @@ public class ResultSetPrinter {
         out.appendAnsi(valueOutputHolder.ansiString);
         out.append(spaces(rightPadWidth));
     }
-    
-    // TODO: add support for aligned decimals
+
     private int alignValueOutput(ValueOutputHolder valueOutputHolder, int padWidth) {
         return padWidth;
     }
@@ -186,7 +188,9 @@ public class ResultSetPrinter {
     }
 
     private ValueOutputHolder outputOfHeader(String headerName) {
-        return new ValueOutputHolder(headerName, headerName, AnsiUtil.formatAsHeader(headerName));
+        int ctrolPos = getCtrlPos(headerName, headerName.length());
+        String displayName = ctrolPos == -1 ? headerName : headerName.substring(0, ctrolPos);
+        return new ValueOutputHolder(headerName, displayName, AnsiUtil.formatAsHeader(displayName));
     }
     
     private ValueOutputHolder outputOf(Object value, int maxStringLength, boolean align) {
@@ -205,12 +209,12 @@ public class ResultSetPrinter {
             return NULL_PLACEHOLDER;
         } else if (
                 value instanceof Float ||
-                value instanceof Double ||
-                value instanceof BigDecimal) {
-            return String.format("%.3f", value);
+                value instanceof Double) {
+            return String.format(OUTPUT_LOCALE, "%.3f", value);
         } else if (
                 value instanceof Number ||
-                value instanceof Temporal) {
+                value instanceof Temporal ||
+                value instanceof TemporalAmount) {
             return value.toString();
         } else {
             return shortenString(value.toString(), maxStringLength);
@@ -219,12 +223,34 @@ public class ResultSetPrinter {
     
     private String shortenString(String stringValue, int maxLength) {
         int length = stringValue.length();
-        if (length <= maxLength) {
+        int ctrlPos = getCtrlPos(stringValue, maxLength);
+        if (length <= maxLength && ctrlPos == -1) {
             return stringValue;
         }
         
-        int innerLength = Math.max(1, maxLength - STRING_OVERFLOW_ELLIPSIS.length());
+        if (ctrlPos == 0) {
+            return STRING_OVERFLOW_ELLIPSIS;
+        }
+
+        int ellipsisLength = STRING_OVERFLOW_ELLIPSIS.length();
+
+        int cutLength = maxLength;
+        if (ctrlPos != -1 && ctrlPos + 3 < cutLength) {
+            cutLength = ctrlPos + 3;
+        }
+
+        int innerLength = Math.max(1, cutLength - ellipsisLength);
         return stringValue.substring(0, innerLength) + STRING_OVERFLOW_ELLIPSIS;
+    }
+
+    private int getCtrlPos(String stringValue, int maxLength) {
+        int until = Math.min(maxLength, stringValue.length());
+        for (int i = 0; i < until; i++) {
+            if (Character.isISOControl(stringValue.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
     }
     
     
