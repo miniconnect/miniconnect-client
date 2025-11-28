@@ -42,6 +42,10 @@ public class AnsiUtil {
     }
     
 
+    public static boolean isFormatted(CharSequence anyText) {
+        return ANSI_ESCAPE_PATTERN.matcher(anyText).find();
+    }
+
     public static String cleanAnsiText(CharSequence ansiText) {
         return ANSI_ESCAPE_PATTERN.matcher(ansiText).replaceAll("");
     }
