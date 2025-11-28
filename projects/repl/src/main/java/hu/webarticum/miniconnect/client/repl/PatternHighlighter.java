@@ -31,7 +31,8 @@ public class PatternHighlighter implements Highlighter {
             for (String groupName : formatters.keySet()) {
                 String part = matcher.group(groupName);
                 if (part != null) {
-                    matcher.appendReplacement(resultBuffer, formatters.get(groupName).apply(part));
+                    String replacement = formatters.get(groupName).apply(part);
+                    matcher.appendReplacement(resultBuffer, Matcher.quoteReplacement(replacement));
                     break;
                 }
             }
