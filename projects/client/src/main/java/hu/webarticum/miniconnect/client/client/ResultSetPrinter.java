@@ -242,8 +242,8 @@ public class ResultSetPrinter {
         int ellipsisLength = STRING_OVERFLOW_ELLIPSIS.length();
 
         int cutLength = maxLength;
-        if (ctrlPos != -1 && ctrlPos + 3 < cutLength) {
-            cutLength = ctrlPos + 3;
+        if (ctrlPos != -1 && ctrlPos + ellipsisLength < cutLength) {
+            cutLength = ctrlPos + ellipsisLength;
         }
 
         int innerLength = Math.max(1, cutLength - ellipsisLength);
