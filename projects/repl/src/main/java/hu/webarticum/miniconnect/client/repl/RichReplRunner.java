@@ -9,7 +9,6 @@ import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultHighlighter;
-import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
@@ -100,7 +99,7 @@ public class RichReplRunner implements ReplRunner {
     private LineReader createLineReader(Terminal terminal) {
         return LineReaderBuilder.builder()
                 .terminal(terminal)
-                .parser(new DefaultParser())
+                .parser(new SafeJlineParser())
                 .history(new DefaultHistory())
                 .highlighter(highlighter)
                 .completer(completer)
