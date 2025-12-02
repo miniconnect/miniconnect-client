@@ -99,7 +99,7 @@ public class SqlRepl implements Repl {
                     .or(Bee.quoted('`', '`'))
                     .more())
             .then(TERMINATOR_FRAGMENT)
-            .then(Bee.WHITESPACE.any())
+            .then(Bee.ANYTHING)
             ;
 
     private static final BeeFragment TERMINATOR_END_FRAGMENT = Bee
