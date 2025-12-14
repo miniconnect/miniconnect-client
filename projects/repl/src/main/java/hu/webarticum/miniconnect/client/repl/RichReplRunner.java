@@ -14,16 +14,16 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
 public class RichReplRunner implements ReplRunner {
-    
+
     private final Highlighter highlighter;
-    
+
     private final Completer completer;
-    
+
     private final Consumer<Exception> exceptionHandler;
-    
+
     private final AnsiAppendable out = new RichAnsiAppendable(System.out); // NOSONAR System.out is necessary
-    
-    
+
+
     public RichReplRunner() {
         this(new DefaultHighlighter(), null, null);
     }
@@ -41,7 +41,7 @@ public class RichReplRunner implements ReplRunner {
         this.completer = completer;
         this.exceptionHandler = exceptionHandler != null ? exceptionHandler : e -> e.printStackTrace();
     }
-    
+
 
     @Override
     public void run(Repl repl) {
@@ -66,7 +66,7 @@ public class RichReplRunner implements ReplRunner {
             repl.bye(out);
         }
     }
-    
+
     public void runThrows(Repl repl, Terminal terminal) throws IOException {
         StringBuilder currentQueryBuilder = new StringBuilder();
         LineReader reader = createLineReader(terminal);
@@ -106,7 +106,7 @@ public class RichReplRunner implements ReplRunner {
                 .variable(LineReader.BLINK_MATCHING_PAREN, 0)
                 .build();
     }
-    
+
     private String composePrompt(Repl repl, boolean wasComplete) throws IOException {
         StringBuilder promptBuilder = new StringBuilder();
         AnsiAppendable promptOut = new RichAnsiAppendable(promptBuilder);
@@ -117,5 +117,5 @@ public class RichReplRunner implements ReplRunner {
         }
         return promptBuilder.toString();
     }
-    
+
 }

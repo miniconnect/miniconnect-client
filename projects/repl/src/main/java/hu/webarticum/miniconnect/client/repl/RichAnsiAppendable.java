@@ -3,15 +3,15 @@ package hu.webarticum.miniconnect.client.repl;
 import java.io.IOException;
 
 public class RichAnsiAppendable implements AnsiAppendable {
-    
+
     private final Appendable baseOut;
-    
-    
+
+
     public RichAnsiAppendable(Appendable baseOut) {
         this.baseOut = baseOut;
     }
-    
-    
+
+
     @Override
     public AnsiAppendable append(CharSequence text) throws IOException {
         return appendAnsi(AnsiUtil.escapeText(text));

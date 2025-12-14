@@ -5,9 +5,9 @@ import java.util.regex.Pattern;
 public class AnsiUtil {
 
     private static final Pattern ANSI_ESCAPE_PATTERN = Pattern.compile("\\e\\[[0-9;]*m");
-    
+
     private static final Pattern CONTROL_CHAR_PATTERN = Pattern.compile("[\\x{0000}-\\x{0008}\\x{000E}-\\x{001F}]");
-    
+
     private static final String PROMPT_START_ANSI = "\u001B[1;34m";
 
     private static final String PROMPT2_START_ANSI = "\u001B[1m";
@@ -17,7 +17,7 @@ public class AnsiUtil {
     private static final String ERROR_START_ANSI = "\u001B[1;31m";
 
     private static final String WARNING_START_ANSI = "\u001B[1;33m";
-    
+
     private static final String HEADER_START_ANSI = "\u001B[1m";
 
     private static final String PARAMETER_START_ANSI = "\u001B[3;33m";
@@ -27,20 +27,20 @@ public class AnsiUtil {
     private static final String KEYWORD_START_ANSI = "\u001B[1;36m";
 
     private static final String VARIABLE_START_ANSI = "\u001B[1;35m";
-    
+
     private static final String STRING_START_ANSI = "\u001B[33m";
-    
+
     private static final String QUOTED_IDENTIFIER_START_ANSI = "\u001B[1;35m";
 
     private static final String NONE_START_ANSI = "\u001B[3;90m";
 
     private static final String RESET_ANSI = "\u001B[0m";
 
-    
+
     private AnsiUtil() {
         // utility class
     }
-    
+
 
     public static boolean isFormatted(CharSequence anyText) {
         return ANSI_ESCAPE_PATTERN.matcher(anyText).find();

@@ -9,13 +9,13 @@ import java.util.function.Consumer;
 public class PlainReplRunner implements ReplRunner {
 
     private final Reader in;
-    
+
     private final AnsiAppendable out;
-    
+
     private final Consumer<Exception> exceptionHandler;
-    
+
     private boolean wasCarriageReturn = false;
-    
+
     private boolean wasEndReached = false;
 
     public PlainReplRunner(InputStream in, Appendable out) {
@@ -64,7 +64,7 @@ public class PlainReplRunner implements ReplRunner {
 
         bye(repl);
     }
-    
+
     private void bye(Repl repl) {
         try {
             repl.bye(out);
@@ -72,12 +72,12 @@ public class PlainReplRunner implements ReplRunner {
             // nothing to do
         }
     }
-    
+
     private String readLine(Reader reader) throws IOException, InterruptedException {
         if (wasEndReached) {
             return null;
         }
-        
+
         StringBuilder resultBuilder = new StringBuilder();
         while (true) {
             int r = readNextChar(reader);
@@ -102,7 +102,7 @@ public class PlainReplRunner implements ReplRunner {
         }
         return resultBuilder.toString();
     }
-    
+
     private int readNextChar(Reader reader) throws IOException, InterruptedException {
         int sleep = 1;
         while (!reader.ready()) {

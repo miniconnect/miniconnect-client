@@ -38,12 +38,12 @@ public class ResultSetPrinter {
     private static final int HIGH_MAX_STRING_LENGTH = 100;
 
     private static final int ESTIMATED_MAX_TABLE_WIDTH = 120;
-    
+
     private static final String STRING_OVERFLOW_ELLIPSIS = "\u2025\u2025";
-    
+
     private static final Locale OUTPUT_LOCALE = Locale.ENGLISH;
 
-    
+
     public void print(ResultTable resultTable, AnsiAppendable out) throws IOException {
         ImmutableList<MiniColumnHeader> columnHeaders = resultTable.resultSet().columnHeaders();
         ImmutableList<String> columnNames = columnHeaders.map(MiniColumnHeader::name);
@@ -65,11 +65,11 @@ public class ResultSetPrinter {
             printNoRows(out);
         }
     }
-    
+
     private void printNoRows(AnsiAppendable out) throws IOException {
         out.append("  Result set contains no rows!\n\n");
     }
-    
+
     private void printDecodedRows(
             List<ImmutableList<Object>> decodedRows,
             ImmutableList<String> columnNames,
@@ -83,7 +83,7 @@ public class ResultSetPrinter {
             String columnName = columnNames.get(i);
             widths[i] = columnName.length();
         }
-        
+
         int numericColumnCount = 0;
         if (!decodedRows.isEmpty()) {
             for (int i = 0; i < columnCount; i++) {
@@ -93,7 +93,7 @@ public class ResultSetPrinter {
                 }
             }
         }
-        
+
         int decorationWidth = (columnCount * 3) + 1;
         int estimatedNumericWidth = numericColumnCount * 3;
         int fullRemainingStringWidth = ESTIMATED_MAX_TABLE_WIDTH - decorationWidth - estimatedNumericWidth;
@@ -111,20 +111,20 @@ public class ResultSetPrinter {
         }
 
         printLine(widths, new LineDefinition(TOP_LINE_CHARS), out);
-        
+
         printOutputRow(columnNames.map(this::outputOfHeader), widths, new boolean[columnCount], new LineDefinition(HEADER_ROW_CHARS), out);
-        
+
         printLine(widths, new LineDefinition(MIDDLE_LINE_CHARS), out);
-        
+
         for (ImmutableList<ValueOutputHolder> outputRow : outputRows) {
             printOutputRow(outputRow, widths, aligns, new LineDefinition(DATA_ROW_CHARS), out);
         }
-        
+
         printLine(widths, new LineDefinition(BOTTOM_LINE_CHARS), out);
 
         out.append('\n');
     }
-    
+
     private boolean isNumeric(ValueTranslator valueTranslator) {
         Class<?> clazz;
         try {
@@ -132,7 +132,7 @@ public class ResultSetPrinter {
         } catch (ClassNotFoundException e) {
             return false;
         }
-        
+
         return Number.class.isAssignableFrom(clazz);
     }
 
@@ -176,7 +176,7 @@ public class ResultSetPrinter {
         out.append(lineDefinition.right);
         out.append('\n');
     }
-    
+
     private void printValueOutput(
             ValueOutputHolder valueOutputHolder, int width, boolean align, AnsiAppendable out) throws IOException {
         Object value = valueOutputHolder.value;
@@ -192,7 +192,7 @@ public class ResultSetPrinter {
     private int alignValueOutput(ValueOutputHolder valueOutputHolder, int padWidth) {
         return padWidth;
     }
-    
+
     private String spaces(int length) {
         StringBuilder resultBuilder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
@@ -206,7 +206,7 @@ public class ResultSetPrinter {
         String displayName = ctrolPos == -1 ? headerName : headerName.substring(0, ctrolPos);
         return new ValueOutputHolder(headerName, displayName, AnsiUtil.formatAsHeader(displayName));
     }
-    
+
     private ValueOutputHolder outputOf(Object value, int maxStringLength) {
         if (value == null) {
             return new ValueOutputHolder(value, NULL_PLACEHOLDER, AnsiUtil.formatAsNone(NULL_PLACEHOLDER));
@@ -225,16 +225,16 @@ public class ResultSetPrinter {
             return shortenedOutputOf(value.toString(), maxStringLength);
         }
     }
-    
+
     private ValueOutputHolder shortenedOutputOf(Object value, int maxLength) {
         String stringValue = value.toString();
-        
+
         int length = stringValue.length();
         int ctrlPos = getCtrlPos(stringValue, maxLength);
         if (length <= maxLength && ctrlPos == -1) {
             return new ValueOutputHolder(value, stringValue, stringValue);
         }
-        
+
         if (ctrlPos == 0) {
             return new ValueOutputHolder(value, STRING_OVERFLOW_ELLIPSIS, AnsiUtil.formatAsNone(STRING_OVERFLOW_ELLIPSIS));
         }
@@ -260,19 +260,19 @@ public class ResultSetPrinter {
         }
         return -1;
     }
-    
-    
+
+
     private static class LineDefinition {
 
         private final char inner;
-        
+
         private final char left;
-        
+
         private final char right;
-        
+
         private final char cross;
-        
-        
+
+
         private LineDefinition(String chars) {
             this(chars.charAt(0), chars.charAt(1), chars.charAt(2), chars.charAt(3));
         }
@@ -287,20 +287,20 @@ public class ResultSetPrinter {
     }
 
     private static class ValueOutputHolder {
-        
+
         private final Object value;
-        
+
         private final String plainString;
-        
+
         private final String ansiString;
-        
-        
+
+
         private ValueOutputHolder(Object value, String plainString, String ansiString) {
             this.value = value;
             this.plainString = plainString;
             this.ansiString = ansiString;
         }
-        
+
     }
 
 }

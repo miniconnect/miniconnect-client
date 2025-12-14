@@ -3,26 +3,26 @@ package hu.webarticum.miniconnect.client.repl;
 import java.io.IOException;
 
 public class HostPortInputRepl implements Repl {
-    
+
     private enum Status {
-        
+
         HOST, PORT, COMPLETED
-        
+
     }
-    
+
 
     private volatile Status status = Status.HOST;
-    
+
     private volatile String host = "";
-    
+
     private volatile int port = 0;
-    
-    
+
+
     public HostPortInputRepl(String defaultHost, int defaultPort) {
         this.host = defaultHost;
         this.port = defaultPort;
     }
-    
+
 
     @Override
     public boolean isCommandComplete(String command) {
@@ -77,7 +77,7 @@ public class HostPortInputRepl implements Repl {
     public void bye(AnsiAppendable out) throws IOException {
         // nothing to do
     }
-    
+
     public String getHost() {
         return host;
     }

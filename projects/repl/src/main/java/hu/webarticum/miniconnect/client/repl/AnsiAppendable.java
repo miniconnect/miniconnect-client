@@ -5,7 +5,7 @@ import java.io.IOException;
 public interface AnsiAppendable extends Appendable {
 
     public AnsiAppendable append(CharSequence text) throws IOException;
-    
+
     public AnsiAppendable appendAnsi(CharSequence ansiText) throws IOException;
 
     @Override

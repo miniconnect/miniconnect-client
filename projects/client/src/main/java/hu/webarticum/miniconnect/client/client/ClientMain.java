@@ -38,7 +38,7 @@ public class ClientMain implements Callable<Integer> {
 
     private static final int DEFAULT_PORT = ServerConstants.DEFAULT_PORT;
 
-   
+
     @Parameters(
             index = "0",
             description = "Server address",
@@ -51,20 +51,20 @@ public class ClientMain implements Callable<Integer> {
             usageHelp = true,
             description = "Prints this help")
     public boolean helpRequested;
-    
+
     @Option(
             names = { "-i", "--interactive-input" },
             arity = "0..1",
             description = "Get server host and port interactively",
             defaultValue = "false")
     public boolean interactiveInputArg;
-    
+
 
     public static void main(String[] args) {
         int exitCode = new CommandLine(ClientMain.class).execute(args);
         System.exit(exitCode);
     }
-    
+
     @Override
     public Integer call() {
         try {
@@ -83,7 +83,7 @@ public class ClientMain implements Callable<Integer> {
             return 1;
         }
     }
-    
+
     public Integer callThrowing() throws Exception {
         String host = DEFAULT_HOST;
         int port = DEFAULT_PORT;
@@ -129,15 +129,15 @@ public class ClientMain implements Callable<Integer> {
         }
         return 0;
     }
-    
+
     private static ReplRunner createReplRunner(Consumer<Exception> exceptionHandler) {
         if (System.console() != null) {
             return new RichReplRunner(createHighlighter(), new KeywordCompleter(SqlRepl.KEYWORDS), exceptionHandler);
         }
-        
+
         return new PlainReplRunner(System.in, System.out, exceptionHandler); // NOSONAR System.out is necessary
     }
-    
+
     private static Highlighter createHighlighter() {
         Pattern pattern =
                 Bee
@@ -162,7 +162,7 @@ public class ClientMain implements Callable<Integer> {
     private void closePrompt() {
         System.out.println("\n");
     }
-    
+
     private void printError(String message) {
         System.out.println("ERROR: " + message);
     }

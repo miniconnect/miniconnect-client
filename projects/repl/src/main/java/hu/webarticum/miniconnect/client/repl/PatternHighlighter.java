@@ -11,17 +11,17 @@ import org.jline.utils.AttributedString;
 import hu.webarticum.miniconnect.lang.ImmutableMap;
 
 public class PatternHighlighter implements Highlighter {
-    
+
     private final Pattern pattern;
-    
+
     private final ImmutableMap<String, Function<String, String>> formatters;
-    
-    
+
+
     public PatternHighlighter(Pattern pattern, ImmutableMap<String, Function<String, String>> formatters) {
         this.pattern = pattern;
         this.formatters = formatters;
     }
-    
+
 
     @Override
     public AttributedString highlight(LineReader reader, String buffer) {

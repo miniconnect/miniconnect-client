@@ -42,7 +42,7 @@ ext.parseChangelogMarkdown = { path ->
     try (InputStream in = new FileInputStream(new File(absolutizePath(path)))) {
         root = parser.parseReader(new InputStreamReader(in));
     }
-    
+
     def releases = [];
     def currentSections = null;
     def currentEntries = null;
@@ -51,24 +51,24 @@ ext.parseChangelogMarkdown = { path ->
             if (((Heading) node).getLevel() == 2) {
                 currentSections = null;
                 currentEntries = null;
-                
+
                 String textContent = getNodeSimpleText(node);
                 def versionMatcher = textContent =~ /^Version (\d+\.\d+\.\d+)$/
                 if (!versionMatcher.matches()) {
                     continue;
                 }
-                
+
                 def nextNode = node.getNext()
                 if (!(nextNode instanceof Paragraph)) {
                     continue;
                 }
                 def nextTextContent = getNodeSimpleText(nextNode);
-                
+
                 def dateMatcher = nextTextContent =~ /^Released on (\d{4}\-\d{2}\-\d{2})$/
                 if (!dateMatcher.matches()) {
                     continue;
                 }
-                
+
                 def version = versionMatcher.group(1);
                 def dateString = dateMatcher.group(1);
                 def dateObj = (LocalDate
@@ -111,12 +111,12 @@ ext.parseChangelogMarkdown = { path ->
 ext.getNodeSimpleText = { node ->
     def resultBuilder = new StringBuilder();
     node.accept(new AbstractVisitor() {
-        
+
         @Override
         public void visit(Text text) {
             resultBuilder.append(text.getLiteral().replaceAll("\\s+", " "));
         }
-        
+
     });
     return resultBuilder.toString();
 }
