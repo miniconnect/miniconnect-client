@@ -225,7 +225,7 @@ public class SqlRepl implements Repl {
         try {
             result = session.execute(sql);
         } catch (MiniErrorException e) {
-            result = new StoredResult(new StoredError(e.code(), e.sqlState(), e.message()));
+            result = StoredResult.ofError(StoredError.from(e));
         } catch (Exception e) {
             printException(e, out);
         }
