@@ -33,11 +33,12 @@ public class PlainReplRunner implements ReplRunner {
         try {
             runThrows(repl);
         } catch (InterruptedException e) {
-            bye(repl);
+            exceptionHandler.accept(e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             exceptionHandler.accept(e);
         }
+        bye(repl);
     }
 
     private void runThrows(Repl repl) throws IOException, InterruptedException {
@@ -61,8 +62,6 @@ public class PlainReplRunner implements ReplRunner {
             }
             repl.prompt(out);
         }
-
-        bye(repl);
     }
 
     private void bye(Repl repl) {

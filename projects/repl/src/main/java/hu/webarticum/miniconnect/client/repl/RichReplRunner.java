@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.jline.reader.Completer;
+import org.jline.reader.EndOfFileException;
 import org.jline.reader.Highlighter;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
@@ -47,21 +47,20 @@ public class RichReplRunner implements ReplRunner {
     public void run(Repl repl) {
         try {
             runTerminal(repl);
-        } catch (Exception e) {
-            exceptionHandler.accept(e);
+        } catch (IOException e) {
+            // nothing to do
         }
     }
 
     public void runTerminal(Repl repl) throws IOException {
         try (Terminal terminal = createTerminal()) {
             repl.welcome(out);
-            terminal.output();
             try {
                 runThrows(repl, terminal);
-            } catch (UserInterruptException e) {
+            } catch (EndOfFileException e) {
                 // nothing to do
             } catch (Exception e) {
-                throw e;
+                exceptionHandler.accept(e);
             }
             repl.bye(out);
         }

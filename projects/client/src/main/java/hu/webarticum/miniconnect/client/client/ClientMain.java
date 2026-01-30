@@ -107,8 +107,9 @@ public class ClientMain implements Callable<Integer> {
             String message = messengerException.isDone() ?
                     "Server connection closed: " + messengerException.getNow(null).getMessage() :
                     e.getMessage();
-            closePrompt();
-            printError(message);
+            if (message != null) {
+                printError(message);
+            }
         });
         if (runHostPortInputRepl) {
             HostPortInputRepl hostPortInputRepl = new HostPortInputRepl(host, port);
@@ -131,11 +132,11 @@ public class ClientMain implements Callable<Integer> {
     }
 
     private static ReplRunner createReplRunner(Consumer<Exception> exceptionHandler) {
-        if (System.console() != null) {
+        if (isCurrentTerminalRich()) {
             return new RichReplRunner(createHighlighter(), new KeywordCompleter(SqlRepl.KEYWORDS), exceptionHandler);
+        } else {
+            return new PlainReplRunner(System.in, System.out, exceptionHandler); // NOSONAR System.out is necessary
         }
-
-        return new PlainReplRunner(System.in, System.out, exceptionHandler); // NOSONAR System.out is necessary
     }
 
     private static Highlighter createHighlighter() {
@@ -159,12 +160,16 @@ public class ClientMain implements Callable<Integer> {
         return new PatternHighlighter(pattern, formatters);
     }
 
-    private void closePrompt() {
-        System.out.println("\n");
+    private void printError(String message) {
+        if (isCurrentTerminalRich()) {
+            System.out.println(AnsiUtil.formatAsError("ERROR: " + message));
+        } else {
+            System.out.println("ERROR: " + message);
+        }
     }
 
-    private void printError(String message) {
-        System.out.println("ERROR: " + message);
+    private static boolean isCurrentTerminalRich() {
+        return System.console() != null;
     }
 
 }
