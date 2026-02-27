@@ -8,5 +8,5 @@ dependencies {
     implementation 'hu.webarticum:regexbee:0.4.0'
 
     api "hu.webarticum.miniconnect.api:api:${miniConnectApiVersion}"
-    api 'org.jline:jline:3.30.4'
+    api 'org.jline:jline:3.30.6'
 }

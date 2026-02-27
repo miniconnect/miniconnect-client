@@ -147,14 +147,16 @@ public class ClientMain implements Callable<Integer> {
                         .then(Bee.DEFAULT_WORD_BOUNDARY)
                         .as("keyword"))
                 .or(Bee.fixedChar('@').then(Bee.ASCII_WORD).as("variable"))
-                .or(Bee.quoted('\'', '\\').as("singlequoted"))
-                .or(Bee.quoted('"', '\\').as("doublequoted"))
+                .or(Bee.quoted('\'', '\'').as("singlequoted"))
+                .or(Bee.oneCharOf("eE").then(Bee.quoted('\'', '\\')).as("singlequotedescaped"))
+                .or(Bee.quoted('"', '\"').as("doublequoted"))
                 .or(Bee.quoted('`', '`').as("backticked"))
                 .toPattern(Pattern.CASE_INSENSITIVE);
         ImmutableMap<String, Function<String, String>> formatters = ImmutableMap.of(
                 "keyword", AnsiUtil::formatAsKeyword,
                 "variable", AnsiUtil::formatAsVariable,
                 "singlequoted", AnsiUtil::formatAsString,
+                "singlequotedescaped", AnsiUtil::formatAsEscapedString,
                 "doublequoted", AnsiUtil::formatAsQuotedIdentifier,
                 "backticked", AnsiUtil::formatAsQuotedIdentifier);
         return new PatternHighlighter(pattern, formatters);

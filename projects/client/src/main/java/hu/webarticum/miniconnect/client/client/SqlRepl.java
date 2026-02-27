@@ -94,8 +94,9 @@ public class SqlRepl implements Repl {
 
     private static final BeeFragment QUERY_FRAGMENT = Bee
             .then(new CharacterRangeFragment(false, "'\"`;").more(Greediness.POSSESSIVE)
-                    .or(Bee.quoted('\'', '\\'))
-                    .or(Bee.quoted('"', '\\'))
+                    .or(Bee.quoted('\'', '\''))
+                    .or(Bee.oneCharOf("eE").then(Bee.quoted('\'', '\\')))
+                    .or(Bee.quoted('"', '\"'))
                     .or(Bee.quoted('`', '`'))
                     .more())
             .then(TERMINATOR_FRAGMENT)

@@ -30,6 +30,10 @@ public class AnsiUtil {
 
     private static final String STRING_START_ANSI = "\u001B[33m";
 
+    private static final String ESCAPE_PREFIX_START_ANSI = "\u001B[1;35m";
+
+    private static final String ESCAPE_STRING_START_ANSI = "\u001B[35m";
+
     private static final String QUOTED_IDENTIFIER_START_ANSI = "\u001B[1;35m";
 
     private static final String NONE_START_ANSI = "\u001B[3;90m";
@@ -96,6 +100,12 @@ public class AnsiUtil {
 
     public static String formatAsString(CharSequence promptText) {
         return STRING_START_ANSI + promptText + RESET_ANSI;
+    }
+
+    public static String formatAsEscapedString(CharSequence promptText) {
+        return
+                ESCAPE_PREFIX_START_ANSI + promptText.charAt(0) + RESET_ANSI +
+                ESCAPE_STRING_START_ANSI + promptText.toString().substring(1) + RESET_ANSI;
     }
 
     public static String formatAsQuotedIdentifier(CharSequence promptText) {
