@@ -28,9 +28,9 @@ import hu.webarticum.miniconnect.record.ResultTable;
 
 // TODO: better abstraction (context/executor vs output-handling), builder
 public class SqlRepl implements Repl {
-    
+
     public static final String DEFAULT_TITLE_MESSAGE = "Welcome in miniConnect SQL REPL!";
-    
+
     // FIXME
     public static final ImmutableList<String> KEYWORDS = ImmutableList.of(
             "data", "help", "exit", "quit",
@@ -41,8 +41,8 @@ public class SqlRepl implements Repl {
             "order", "by", "asc", "desc", "nulls", "first", "last", "limit",
             "values", "schemas", "databases", "tables",
             "left", "inner", "outer", "join", "on", "union");
-    
-    
+
+
     private static final BeeFragment TERMINATOR_FRAGMENT = Bee
             .then(Bee.WHITESPACE.any())
             .then(Bee.fixedChar(';'))
@@ -67,7 +67,7 @@ public class SqlRepl implements Repl {
             .then(TERMINATOR_FRAGMENT.optional())
             .then(Bee.WHITESPACE.any())
             ;
-    
+
     private static final BeeFragment HELP_FRAGMENT = Bee
             .then(Bee.WHITESPACE.any())
             .then(Bee.fixed("help"))
@@ -75,7 +75,7 @@ public class SqlRepl implements Repl {
             .then(TERMINATOR_FRAGMENT.optional())
             .then(Bee.WHITESPACE.any())
             ;
-    
+
     private static final BeeFragment QUIT_FRAGMENT = Bee
             .then(Bee.WHITESPACE.any())
             .then(Bee.oneFixedOf("exit", "quit"))
@@ -91,15 +91,16 @@ public class SqlRepl implements Repl {
             .then(Bee.WHITESPACE)
             .then(Bee.ANYTHING)
             ;
-    
+
     private static final BeeFragment QUERY_FRAGMENT = Bee
             .then(new CharacterRangeFragment(false, "'\"`;").more(Greediness.POSSESSIVE)
-                    .or(Bee.quoted('\'', '\\'))
-                    .or(Bee.quoted('"', '\\'))
+                    .or(Bee.quoted('\'', '\''))
+                    .or(Bee.oneCharOf("eE").then(Bee.quoted('\'', '\\')))
+                    .or(Bee.quoted('"', '\"'))
                     .or(Bee.quoted('`', '`'))
                     .more())
             .then(TERMINATOR_FRAGMENT)
-            .then(Bee.WHITESPACE.any())
+            .then(Bee.ANYTHING)
             ;
 
     private static final BeeFragment TERMINATOR_END_FRAGMENT = Bee
@@ -109,13 +110,13 @@ public class SqlRepl implements Repl {
             ;
 
     private static final Pattern TERMINATOR_END_PATTERN = TERMINATOR_END_FRAGMENT.toPattern();
-    
+
     private static final Pattern DATA_PATTERN = DATA_FRAGMENT.toPattern(Pattern.CASE_INSENSITIVE);
-    
+
     private static final Pattern HELP_PATTERN = HELP_FRAGMENT.toPattern(Pattern.CASE_INSENSITIVE);
 
     private static final Pattern QUIT_PATTERN = QUIT_FRAGMENT.toPattern(Pattern.CASE_INSENSITIVE);
-    
+
     private static final Pattern COMMAND_PATTERN = Bee
             .then(Bee.BEGIN)
             .then(DATA_FRAGMENT
@@ -125,12 +126,12 @@ public class SqlRepl implements Repl {
                     .or(QUERY_FRAGMENT))
             .then(Bee.END)
             .toPattern(Pattern.MULTILINE | Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-    
+
     private static final Pattern UNESCAPE_PATTERN = Pattern.compile("\\\\(.)");
-    
+
 
     private final MiniSession session;
-    
+
     private final String titleMessage;
 
 
@@ -169,7 +170,7 @@ public class SqlRepl implements Repl {
         out.append("                         must be terminated with semicolon (;)\n\n");
     }
 
-    
+
     @Override
     public boolean isCommandComplete(String command) {
         if (command.isEmpty()) {
@@ -200,7 +201,7 @@ public class SqlRepl implements Repl {
         if (command.isEmpty()) {
             return true;
         }
-        
+
         Matcher dataMatcher = DATA_PATTERN.matcher(command);
         if (dataMatcher.matches()) {
             String escapedName = dataMatcher.group("name");
@@ -210,7 +211,7 @@ public class SqlRepl implements Repl {
             putLargeData(name, source, out);
             return true;
         }
-        
+
         if (HELP_PATTERN.matcher(command).matches()) {
             printHelp(out);
             return true;
@@ -225,11 +226,11 @@ public class SqlRepl implements Repl {
         try {
             result = session.execute(sql);
         } catch (MiniErrorException e) {
-            result = new StoredResult(new StoredError(e.code(), e.sqlState(), e.message()));
+            result = StoredResult.ofError(StoredError.from(e));
         } catch (Exception e) {
             printException(e, out);
         }
-        
+
         if (result != null) {
             printResult(result, out);
         }
@@ -256,20 +257,20 @@ public class SqlRepl implements Repl {
 
     private void printSuccessResult(MiniResult result, AnsiAppendable out) throws IOException {
         out.appendAnsi("\n  " + AnsiUtil.formatAsSuccess("Query was successfully executed!") + "\n\n");
-        
+
         printWarnings(result.warnings(), out);
-        
+
         if (result.hasResultSet()) {
             ResultTable resultTable = new ResultTable(result.resultSet());
             new ResultSetPrinter().print(resultTable, out);
         }
     }
-    
+
     private void printWarnings(ImmutableList<MiniError> warnings, AnsiAppendable out) throws IOException {
         if (warnings.isEmpty()) {
             return;
         }
-        
+
         for (MiniError warning : warnings) {
             out.appendAnsi(AnsiUtil.formatAsWarning("  WARNING: " + warning.message()));
             out.append('\n');
@@ -293,7 +294,7 @@ public class SqlRepl implements Repl {
         MiniLargeDataSaveResult result = session.putLargeData(name, length, in);
         printLargeDataSaveResult(result, name, length, out);
     }
-    
+
     private void printLargeDataSaveResult(
             MiniLargeDataSaveResult result, String name, long length, AnsiAppendable out) throws IOException {
         if (result.success()) {
@@ -317,7 +318,7 @@ public class SqlRepl implements Repl {
         out.append("  SQL state: " + error.sqlState() + "\n");
         out.appendAnsi("  Message: " + AnsiUtil.formatAsError(error.message()) + "\n\n");
     }
-    
+
     @Override
     public void bye(AnsiAppendable out) throws IOException {
         out.append("\nBye-bye!\n\n");

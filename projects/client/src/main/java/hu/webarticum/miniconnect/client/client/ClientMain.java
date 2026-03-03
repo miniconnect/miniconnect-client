@@ -38,7 +38,7 @@ public class ClientMain implements Callable<Integer> {
 
     private static final int DEFAULT_PORT = ServerConstants.DEFAULT_PORT;
 
-   
+
     @Parameters(
             index = "0",
             description = "Server address",
@@ -51,20 +51,20 @@ public class ClientMain implements Callable<Integer> {
             usageHelp = true,
             description = "Prints this help")
     public boolean helpRequested;
-    
+
     @Option(
             names = { "-i", "--interactive-input" },
             arity = "0..1",
             description = "Get server host and port interactively",
             defaultValue = "false")
     public boolean interactiveInputArg;
-    
+
 
     public static void main(String[] args) {
         int exitCode = new CommandLine(ClientMain.class).execute(args);
         System.exit(exitCode);
     }
-    
+
     @Override
     public Integer call() {
         try {
@@ -83,7 +83,7 @@ public class ClientMain implements Callable<Integer> {
             return 1;
         }
     }
-    
+
     public Integer callThrowing() throws Exception {
         String host = DEFAULT_HOST;
         int port = DEFAULT_PORT;
@@ -107,8 +107,9 @@ public class ClientMain implements Callable<Integer> {
             String message = messengerException.isDone() ?
                     "Server connection closed: " + messengerException.getNow(null).getMessage() :
                     e.getMessage();
-            closePrompt();
-            printError(message);
+            if (message != null) {
+                printError(message);
+            }
         });
         if (runHostPortInputRepl) {
             HostPortInputRepl hostPortInputRepl = new HostPortInputRepl(host, port);
@@ -129,15 +130,15 @@ public class ClientMain implements Callable<Integer> {
         }
         return 0;
     }
-    
+
     private static ReplRunner createReplRunner(Consumer<Exception> exceptionHandler) {
-        if (System.console() != null) {
+        if (isCurrentTerminalRich()) {
             return new RichReplRunner(createHighlighter(), new KeywordCompleter(SqlRepl.KEYWORDS), exceptionHandler);
+        } else {
+            return new PlainReplRunner(System.in, System.out, exceptionHandler); // NOSONAR System.out is necessary
         }
-        
-        return new PlainReplRunner(System.in, System.out, exceptionHandler); // NOSONAR System.out is necessary
     }
-    
+
     private static Highlighter createHighlighter() {
         Pattern pattern =
                 Bee
@@ -146,25 +147,31 @@ public class ClientMain implements Callable<Integer> {
                         .then(Bee.DEFAULT_WORD_BOUNDARY)
                         .as("keyword"))
                 .or(Bee.fixedChar('@').then(Bee.ASCII_WORD).as("variable"))
-                .or(Bee.quoted('\'', '\\').as("singlequoted"))
-                .or(Bee.quoted('"', '\\').as("doublequoted"))
+                .or(Bee.quoted('\'', '\'').as("singlequoted"))
+                .or(Bee.oneCharOf("eE").then(Bee.quoted('\'', '\\')).as("singlequotedescaped"))
+                .or(Bee.quoted('"', '\"').as("doublequoted"))
                 .or(Bee.quoted('`', '`').as("backticked"))
                 .toPattern(Pattern.CASE_INSENSITIVE);
         ImmutableMap<String, Function<String, String>> formatters = ImmutableMap.of(
                 "keyword", AnsiUtil::formatAsKeyword,
                 "variable", AnsiUtil::formatAsVariable,
                 "singlequoted", AnsiUtil::formatAsString,
+                "singlequotedescaped", AnsiUtil::formatAsEscapedString,
                 "doublequoted", AnsiUtil::formatAsQuotedIdentifier,
                 "backticked", AnsiUtil::formatAsQuotedIdentifier);
         return new PatternHighlighter(pattern, formatters);
     }
 
-    private void closePrompt() {
-        System.out.println("\n");
-    }
-    
     private void printError(String message) {
-        System.out.println("ERROR: " + message);
+        if (isCurrentTerminalRich()) {
+            System.out.println(AnsiUtil.formatAsError("ERROR: " + message));
+        } else {
+            System.out.println("ERROR: " + message);
+        }
+    }
+
+    private static boolean isCurrentTerminalRich() {
+        return System.console() != null;
     }
 
 }

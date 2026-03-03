@@ -1,10 +1,11 @@
 package hu.webarticum.miniconnect.client.client;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import hu.webarticum.miniconnect.api.MiniColumnHeader;
 import hu.webarticum.miniconnect.client.repl.AnsiAppendable;
@@ -18,6 +19,16 @@ import hu.webarticum.miniconnect.record.translator.ValueTranslator;
 public class ResultSetPrinter {
 
     // TODO: make these configurable
+    private static final String TOP_LINE_CHARS = "\u2500\u250C\u2510\u252C";
+
+    private static final String HEADER_ROW_CHARS = " \u2502\u2502\u2502";
+
+    private static final String MIDDLE_LINE_CHARS = "\u2500\u251C\u2524\u253C";
+
+    private static final String DATA_ROW_CHARS = " \u2502\u2502\u2502";
+
+    private static final String BOTTOM_LINE_CHARS = "\u2500\u2514\u2518\u2534";
+
     private static final String NULL_PLACEHOLDER = "[NULL]";
 
     private static final int ROWS_BUFFER_SIZE = 20;
@@ -27,10 +38,12 @@ public class ResultSetPrinter {
     private static final int HIGH_MAX_STRING_LENGTH = 100;
 
     private static final int ESTIMATED_MAX_TABLE_WIDTH = 120;
-    
-    private static final String STRING_OVERFLOW_ELLIPSIS = "...";
 
-    
+    private static final String STRING_OVERFLOW_ELLIPSIS = "\u2025\u2025";
+
+    private static final Locale OUTPUT_LOCALE = Locale.ENGLISH;
+
+
     public void print(ResultTable resultTable, AnsiAppendable out) throws IOException {
         ImmutableList<MiniColumnHeader> columnHeaders = resultTable.resultSet().columnHeaders();
         ImmutableList<String> columnNames = columnHeaders.map(MiniColumnHeader::name);
@@ -52,11 +65,11 @@ public class ResultSetPrinter {
             printNoRows(out);
         }
     }
-    
+
     private void printNoRows(AnsiAppendable out) throws IOException {
         out.append("  Result set contains no rows!\n\n");
     }
-    
+
     private void printDecodedRows(
             List<ImmutableList<Object>> decodedRows,
             ImmutableList<String> columnNames,
@@ -70,7 +83,7 @@ public class ResultSetPrinter {
             String columnName = columnNames.get(i);
             widths[i] = columnName.length();
         }
-        
+
         int numericColumnCount = 0;
         if (!decodedRows.isEmpty()) {
             for (int i = 0; i < columnCount; i++) {
@@ -80,7 +93,7 @@ public class ResultSetPrinter {
                 }
             }
         }
-        
+
         int decorationWidth = (columnCount * 3) + 1;
         int estimatedNumericWidth = numericColumnCount * 3;
         int fullRemainingStringWidth = ESTIMATED_MAX_TABLE_WIDTH - decorationWidth - estimatedNumericWidth;
@@ -89,7 +102,7 @@ public class ResultSetPrinter {
         int maxStringLength = Math.max(LOW_MAX_STRING_LENGTH, Math.min(HIGH_MAX_STRING_LENGTH, rawMaxStringLength));
         List<ImmutableList<ValueOutputHolder>> outputRows = new ArrayList<>(decodedRows.size());
         for (ImmutableList<Object> decodedRow : decodedRows) {
-            ImmutableList<ValueOutputHolder> outputRow = decodedRow.map((i, v) -> outputOf(v, maxStringLength, aligns[i]));
+            ImmutableList<ValueOutputHolder> outputRow = decodedRow.map((i, v) -> outputOf(v, maxStringLength));
             outputRows.add(outputRow);
             for (int i = 0; i < columnCount; i++) {
                 String stringValue = outputRow.get(i).plainString;
@@ -97,21 +110,21 @@ public class ResultSetPrinter {
             }
         }
 
-        printLine(widths, '\u2500', '\u250C', '\u2510', '\u252C', out);
-        
-        printOutputRow(columnNames.map(this::outputOfHeader), widths, new boolean[columnCount], out);
-        
-        printLine(widths, '\u2500', '\u251C', '\u2524', '\u253C', out);
-        
+        printLine(widths, new LineDefinition(TOP_LINE_CHARS), out);
+
+        printOutputRow(columnNames.map(this::outputOfHeader), widths, new boolean[columnCount], new LineDefinition(HEADER_ROW_CHARS), out);
+
+        printLine(widths, new LineDefinition(MIDDLE_LINE_CHARS), out);
+
         for (ImmutableList<ValueOutputHolder> outputRow : outputRows) {
-            printOutputRow(outputRow, widths, aligns, out);
+            printOutputRow(outputRow, widths, aligns, new LineDefinition(DATA_ROW_CHARS), out);
         }
-        
-        printLine(widths, '\u2500', '\u2514', '\u2518', '\u2534', out);
+
+        printLine(widths, new LineDefinition(BOTTOM_LINE_CHARS), out);
 
         out.append('\n');
     }
-    
+
     private boolean isNumeric(ValueTranslator valueTranslator) {
         Class<?> clazz;
         try {
@@ -119,28 +132,28 @@ public class ResultSetPrinter {
         } catch (ClassNotFoundException e) {
             return false;
         }
-        
+
         return Number.class.isAssignableFrom(clazz);
     }
 
     private void printLine(
-            int[] widths, char inner, char left, char right, char cross, AnsiAppendable out) throws IOException {
+            int[] widths, LineDefinition lineDefinition, AnsiAppendable out) throws IOException {
         out.append("  ");
         boolean first = true;
         for (int width : widths) {
             if (first) {
-                out.append(left);
+                out.append(lineDefinition.left);
                 first = false;
             } else {
-                out.append(cross);
+                out.append(lineDefinition.cross);
             }
-            out.append(inner);
+            out.append(lineDefinition.inner);
             for (int i = 0; i < width; i++) {
-                out.append(inner);
+                out.append(lineDefinition.inner);
             }
-            out.append(inner);
+            out.append(lineDefinition.inner);
         }
-        out.append(right);
+        out.append(lineDefinition.right);
         out.append('\n');
     }
 
@@ -148,18 +161,22 @@ public class ResultSetPrinter {
             ImmutableList<ValueOutputHolder> outputRow,
             int[] widths,
             boolean[] aligns,
+            LineDefinition lineDefinition,
             AnsiAppendable out
             ) throws IOException {
         out.append("  ");
+        char lineChar = lineDefinition.left;
         for (int i = 0; i < widths.length; i++) {
-            out.append("\u2502 ");
+            out.append(lineChar);
+            out.append(' ');
             printValueOutput(outputRow.get(i), widths[i], aligns[i], out);
             out.append(' ');
+            lineChar = lineDefinition.cross;
         }
-        out.append('\u2502');
+        out.append(lineDefinition.right);
         out.append('\n');
     }
-    
+
     private void printValueOutput(
             ValueOutputHolder valueOutputHolder, int width, boolean align, AnsiAppendable out) throws IOException {
         Object value = valueOutputHolder.value;
@@ -171,12 +188,11 @@ public class ResultSetPrinter {
         out.appendAnsi(valueOutputHolder.ansiString);
         out.append(spaces(rightPadWidth));
     }
-    
-    // TODO: add support for aligned decimals
+
     private int alignValueOutput(ValueOutputHolder valueOutputHolder, int padWidth) {
         return padWidth;
     }
-    
+
     private String spaces(int length) {
         StringBuilder resultBuilder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
@@ -186,63 +202,105 @@ public class ResultSetPrinter {
     }
 
     private ValueOutputHolder outputOfHeader(String headerName) {
-        return new ValueOutputHolder(headerName, headerName, AnsiUtil.formatAsHeader(headerName));
+        int ctrolPos = getCtrlPos(headerName, headerName.length());
+        String displayName = ctrolPos == -1 ? headerName : headerName.substring(0, ctrolPos);
+        return new ValueOutputHolder(headerName, displayName, AnsiUtil.formatAsHeader(displayName));
     }
-    
-    private ValueOutputHolder outputOf(Object value, int maxStringLength, boolean align) {
-        String plainString = stringify(value, maxStringLength);
-        String ansiString = AnsiUtil.escapeText(plainString);
+
+    private ValueOutputHolder outputOf(Object value, int maxStringLength) {
         if (value == null) {
-            ansiString = AnsiUtil.formatAsNone(ansiString);
-        } else if (align) {
-            ansiString = AnsiUtil.formatAsNumber(ansiString);
-        }
-        return new ValueOutputHolder(value, plainString, ansiString);
-    }
-    
-    private String stringify(Object value, int maxStringLength) {
-        if (value == null) {
-            return NULL_PLACEHOLDER;
+            return new ValueOutputHolder(value, NULL_PLACEHOLDER, AnsiUtil.formatAsNone(NULL_PLACEHOLDER));
         } else if (
                 value instanceof Float ||
-                value instanceof Double ||
-                value instanceof BigDecimal) {
-            return String.format("%.3f", value);
-        } else if (
-                value instanceof Number ||
-                value instanceof Temporal) {
-            return value.toString();
+                value instanceof Double) {
+            String numberString = String.format(OUTPUT_LOCALE, "%.3f", value);
+            return new ValueOutputHolder(value, numberString, AnsiUtil.formatAsNumber(numberString));
+        } else if (value instanceof Number || value instanceof Temporal || value instanceof TemporalAmount) {
+            String numberString = value.toString();
+            return new ValueOutputHolder(value, numberString, AnsiUtil.formatAsNumber(numberString));
+        } else if (value instanceof Temporal || value instanceof TemporalAmount) {
+            String temporalString = value.toString();
+            return new ValueOutputHolder(value, temporalString, temporalString);
         } else {
-            return shortenString(value.toString(), maxStringLength);
+            return shortenedOutputOf(value.toString(), maxStringLength);
         }
     }
-    
-    private String shortenString(String stringValue, int maxLength) {
+
+    private ValueOutputHolder shortenedOutputOf(Object value, int maxLength) {
+        String stringValue = value.toString();
+
         int length = stringValue.length();
-        if (length <= maxLength) {
-            return stringValue;
+        int ctrlPos = getCtrlPos(stringValue, maxLength);
+        if (length <= maxLength && ctrlPos == -1) {
+            return new ValueOutputHolder(value, stringValue, stringValue);
         }
-        
-        int innerLength = Math.max(1, maxLength - STRING_OVERFLOW_ELLIPSIS.length());
-        return stringValue.substring(0, innerLength) + STRING_OVERFLOW_ELLIPSIS;
+
+        if (ctrlPos == 0) {
+            return new ValueOutputHolder(value, STRING_OVERFLOW_ELLIPSIS, AnsiUtil.formatAsNone(STRING_OVERFLOW_ELLIPSIS));
+        }
+
+        int ellipsisLength = STRING_OVERFLOW_ELLIPSIS.length();
+
+        int cutLength = maxLength;
+        if (ctrlPos != -1 && ctrlPos + ellipsisLength < cutLength) {
+            cutLength = ctrlPos + ellipsisLength;
+        }
+
+        int innerLength = Math.max(1, cutLength - ellipsisLength);
+        String excerpt = stringValue.substring(0, innerLength);
+        return new ValueOutputHolder(value, excerpt + STRING_OVERFLOW_ELLIPSIS, excerpt + AnsiUtil.formatAsNone(STRING_OVERFLOW_ELLIPSIS));
     }
-    
-    
+
+    private int getCtrlPos(String stringValue, int maxLength) {
+        int until = Math.min(maxLength, stringValue.length());
+        for (int i = 0; i < until; i++) {
+            if (Character.isISOControl(stringValue.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    private static class LineDefinition {
+
+        private final char inner;
+
+        private final char left;
+
+        private final char right;
+
+        private final char cross;
+
+
+        private LineDefinition(String chars) {
+            this(chars.charAt(0), chars.charAt(1), chars.charAt(2), chars.charAt(3));
+        }
+
+        private LineDefinition(char inner, char left, char right, char cross) {
+            this.inner = inner;
+            this.left = left;
+            this.right = right;
+            this.cross = cross;
+        }
+
+    }
+
     private static class ValueOutputHolder {
-        
+
         private final Object value;
-        
+
         private final String plainString;
-        
+
         private final String ansiString;
-        
-        
+
+
         private ValueOutputHolder(Object value, String plainString, String ansiString) {
             this.value = value;
             this.plainString = plainString;
             this.ansiString = ansiString;
         }
-        
+
     }
 
 }

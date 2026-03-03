@@ -4,27 +4,26 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.jline.reader.Completer;
+import org.jline.reader.EndOfFileException;
 import org.jline.reader.Highlighter;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultHighlighter;
-import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
 public class RichReplRunner implements ReplRunner {
-    
+
     private final Highlighter highlighter;
-    
+
     private final Completer completer;
-    
+
     private final Consumer<Exception> exceptionHandler;
-    
+
     private final AnsiAppendable out = new RichAnsiAppendable(System.out); // NOSONAR System.out is necessary
-    
-    
+
+
     public RichReplRunner() {
         this(new DefaultHighlighter(), null, null);
     }
@@ -42,32 +41,31 @@ public class RichReplRunner implements ReplRunner {
         this.completer = completer;
         this.exceptionHandler = exceptionHandler != null ? exceptionHandler : e -> e.printStackTrace();
     }
-    
+
 
     @Override
     public void run(Repl repl) {
         try {
             runTerminal(repl);
-        } catch (Exception e) {
-            exceptionHandler.accept(e);
+        } catch (IOException e) {
+            // nothing to do
         }
     }
 
     public void runTerminal(Repl repl) throws IOException {
         try (Terminal terminal = createTerminal()) {
             repl.welcome(out);
-            terminal.output();
             try {
                 runThrows(repl, terminal);
-            } catch (UserInterruptException e) {
+            } catch (EndOfFileException e) {
                 // nothing to do
             } catch (Exception e) {
-                throw e;
+                exceptionHandler.accept(e);
             }
             repl.bye(out);
         }
     }
-    
+
     public void runThrows(Repl repl, Terminal terminal) throws IOException {
         StringBuilder currentQueryBuilder = new StringBuilder();
         LineReader reader = createLineReader(terminal);
@@ -100,14 +98,14 @@ public class RichReplRunner implements ReplRunner {
     private LineReader createLineReader(Terminal terminal) {
         return LineReaderBuilder.builder()
                 .terminal(terminal)
-                .parser(new DefaultParser())
+                .parser(new SafeJlineParser())
                 .history(new DefaultHistory())
                 .highlighter(highlighter)
                 .completer(completer)
                 .variable(LineReader.BLINK_MATCHING_PAREN, 0)
                 .build();
     }
-    
+
     private String composePrompt(Repl repl, boolean wasComplete) throws IOException {
         StringBuilder promptBuilder = new StringBuilder();
         AnsiAppendable promptOut = new RichAnsiAppendable(promptBuilder);
@@ -118,5 +116,5 @@ public class RichReplRunner implements ReplRunner {
         }
         return promptBuilder.toString();
     }
-    
+
 }

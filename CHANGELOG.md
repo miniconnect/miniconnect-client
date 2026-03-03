@@ -1,6 +1,26 @@
 # Changelog
 
 
+## Version 0.5.0
+
+Released on *2026-03-03*
+
+### Fixed:
+
+- Fixed escape handling in the REPL
+- Fixed a minor issue in the manpage generator
+
+### Improved:
+
+- Improved result table and error printing in the REPL
+- Improved interactivity in the REPL
+- Introduced the new creator methods for result types
+
+### Development:
+
+- Updated to gradle 9 and improved build
+
+
 ## Version 0.4.0
 
 Released on *2025-09-29*

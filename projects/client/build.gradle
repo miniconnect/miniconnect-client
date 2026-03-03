@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.3.0'
     id 'com.netflix.nebula.ospackage' version '11.11.2'
 }
 
@@ -31,7 +31,7 @@ dependencies {
     implementation "hu.webarticum.miniconnect:server:${miniConnectVersion}"
     implementation 'hu.webarticum:regexbee:0.4.0'
     implementation 'info.picocli:picocli:4.7.7'
-    
+
     runtimeOnly 'org.slf4j:slf4j-nop:2.0.17'
 }
 
@@ -48,17 +48,17 @@ tasks.register('buildDebPackage', Deb) {
     dependsOn(tasks.named('jar'))
     File jarFile = jar.archiveFile.getAsFile().get();
     String jarFileName = jarFile.getName()
-    
+
     doFirst {
         mkdir 'build/deb-prepare'
-        
+
         // TODO: generate from picocli
         compressWithGzip9('packaging/deb/manpage', 'build/deb-prepare/manpage.gz')
-        
+
         def changelogData = parseChangelogMarkdown('../../CHANGELOG.md')
         buildDebianChangelog('build/deb-prepare/changelog', changelogData)
         compressWithGzip9('build/deb-prepare/changelog', 'build/deb-prepare/changelog.Debian.gz')
-        
+
         copy {
             from (file('packaging/deb/copyright'))
             into 'build/deb-prepare'
@@ -67,7 +67,7 @@ tasks.register('buildDebPackage', Deb) {
                 'CURRENT_YEAR': new Date().format('yyyy').toString(),
             ])
         }
-        
+
         copy {
             from (file('packaging/deb/start.sh'))
             into 'build/deb-prepare'
@@ -79,7 +79,7 @@ tasks.register('buildDebPackage', Deb) {
             ])
         }
     }
-    
+
     dirPermissions {
         unix(0755)
     }
@@ -88,7 +88,7 @@ tasks.register('buildDebPackage', Deb) {
     }
     user = "root"
     permissionGroup = "root"
-    
+
     packageName = deploymentName
     version =  project.version
     release = null
@@ -96,20 +96,20 @@ tasks.register('buildDebPackage', Deb) {
     url = websiteUrl
     summary = project.description
     packageDescription = longDescription
-    
-    
+
+
     // TODO: that dependency should be set?
     requires('default-jre').or('java8-runtime').or('java9-runtime')
     requires('jarwrapper')
-    
+
     from (jarFile) {
         into "/usr/share/${deploymentName}"
     }
-    
+
     from (file('build/deb-prepare/copyright')) {
         into "/usr/share/doc/${deploymentName}"
     }
-    
+
     from (file('build/deb-prepare/start.sh')) {
         into '/usr/bin'
         rename(/.*/, executableName)
@@ -117,19 +117,19 @@ tasks.register('buildDebPackage', Deb) {
             unix(0755)
         }
     }
-    
+
     from (file('build/deb-prepare/manpage.gz')) {
         into '/usr/share/man/man1'
         rename(/.*/, "${deploymentName}.1.gz")
     }
-    
+
     from (file('build/deb-prepare/changelog.Debian.gz')) {
         into "/usr/share/doc/${deploymentName}"
     }
-    
+
     link("/usr/bin/${longExecutableName}", executableName)
     link("/usr/share/man/man1/${executableName}.1.gz", "${deploymentName}.1.gz")
-    
+
     from (configurations.runtimeClasspath) {
         into "/usr/share/${deploymentName}/lib"
     }
