@@ -31,16 +31,22 @@ public class SqlRepl implements Repl {
 
     public static final String DEFAULT_TITLE_MESSAGE = "Welcome in miniConnect SQL REPL!";
 
-    // FIXME
     public static final ImmutableList<String> KEYWORDS = ImmutableList.of(
             "data", "help", "exit", "quit",
-            "select", "insert", "replace", "update", "delete",
-            "show", "call", "use", "set",
-            "as", "count", "from", "unit", "into",
-            "where", "and", "between", "is", "not", "null", "like",
-            "order", "by", "asc", "desc", "nulls", "first", "last", "limit",
-            "values", "schemas", "databases", "tables",
-            "left", "inner", "outer", "join", "on", "union");
+            "and", "as", "asc", "autocommit", "between", "bigint", "binary", "blob", "bool", "boolean", "both", "by",
+            "call", "case", "cast", "char", "clob", "convert", "count", "current_catalog", "current_date",
+            "current_schema", "current_time", "current_timestamp", "current_user", "databases",
+            "date", "datetime", "datetimeo", "datetimetz", "day", "dec", "decimal", "default", "delete", "desc", "distinct", "div", "double",
+            "else", "end", "escape", "extract", "false", "fetch", "first", "float", "for", "from", "hour",
+            "identity", "ilike", "in", "inner", "insert", "instant", "int", "integer", "interval", "into", "is",
+            "join", "last", "last_insert_id", "leading", "left", "like", "limit", "minute", "mod", "month",
+            "nchar", "next", "not", "null", "nulls", "numeric", "nvarchar", "offset", "on", "only", "or", "order", "outer", "overlaps",
+            "position", "precision", "readonly", "real", "regexp", "replace", "right", "rlike", "row", "rows",
+            "schemas", "second", "select", "session_user", "set", "show", "smallint", "substr", "substring", "system_user",
+            "tables", "text", "then", "time", "timeo", "timestamp", "timestampo", "timestamptz", "timetz",
+            "timezone", "timezone_hour", "timezone_minute", "tinyint", "to", "trailing", "trim", "true",
+            "union", "unit", "unknown", "update", "use", "utcoffset", "values", "varbinary", "varchar",
+            "when", "where", "with", "without", "xor", "year", "zone");
 
 
     private static final BeeFragment TERMINATOR_FRAGMENT = Bee
