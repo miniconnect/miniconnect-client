@@ -5,7 +5,7 @@ plugins {
 description = "MiniConnect REPL"
 
 dependencies {
-    implementation 'hu.webarticum:regexbee:0.4.0'
+    implementation 'hu.webarticum:regexbee:0.4.1'
 
     api "hu.webarticum.miniconnect.api:api:${miniConnectApiVersion}"
     api 'org.jline:jline:3.30.6'
