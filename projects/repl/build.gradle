@@ -4,6 +4,10 @@ plugins {
 
 description = "MiniConnect REPL"
 
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8
+}
+
 dependencies {
     implementation 'hu.webarticum:regexbee:0.4.1'
 
