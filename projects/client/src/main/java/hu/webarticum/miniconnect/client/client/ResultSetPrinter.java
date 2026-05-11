@@ -215,7 +215,7 @@ public class ResultSetPrinter {
                 value instanceof Double) {
             String numberString = String.format(OUTPUT_LOCALE, "%.3f", value);
             return new ValueOutputHolder(value, numberString, AnsiUtil.formatAsNumber(numberString));
-        } else if (value instanceof Number || value instanceof Temporal || value instanceof TemporalAmount) {
+        } else if (value instanceof Number) {
             String numberString = value.toString();
             return new ValueOutputHolder(value, numberString, AnsiUtil.formatAsNumber(numberString));
         } else if (value instanceof Temporal || value instanceof TemporalAmount) {

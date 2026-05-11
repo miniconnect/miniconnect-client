@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'com.gradleup.shadow' version '9.3.0'
+    id 'com.gradleup.shadow' version '9.4.1'
     id 'com.netflix.nebula.ospackage' version '11.11.2'
 }
 
@@ -22,6 +22,10 @@ def longDescription = """Connects to the specified server via miniconnect protoc
 It's basically a SQL REPL that you can use to run queries.
 It displays result sets and error responses in a friendly manner."""
 
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8
+}
+
 dependencies {
     implementation project(':repl')
     implementation "hu.webarticum.miniconnect.api:api:${miniConnectApiVersion}"
@@ -29,7 +33,7 @@ dependencies {
     implementation "hu.webarticum.miniconnect:record:${miniConnectVersion}"
     implementation "hu.webarticum.miniconnect:messenger:${miniConnectVersion}"
     implementation "hu.webarticum.miniconnect:server:${miniConnectVersion}"
-    implementation 'hu.webarticum:regexbee:0.4.0'
+    implementation 'hu.webarticum:regexbee:0.4.1'
     implementation 'info.picocli:picocli:4.7.7'
 
     runtimeOnly 'org.slf4j:slf4j-nop:2.0.17'
