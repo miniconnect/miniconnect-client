@@ -1,6 +1,24 @@
 # Changelog
 
 
+## Version 0.6.0
+
+Released on *2026-05-11*
+
+### Fixed:
+
+- Fixed conversion of temporal values
+
+### Improved:
+
+- Improved syntax highlighting
+
+### Development:
+
+- Upgraded to gradle 9.5.0 and improved build
+- Added CONTRIBUTING.md and CODE_OF_CONDUCT.md
+
+
 ## Version 0.5.0
 
 Released on *2026-03-03*
